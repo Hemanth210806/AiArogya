@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+{% block title %}Symptom AI — ArogyaAI{% endblock %}
+
+{% block content %}
+<style>
+  @media (max-width: 600px) {
+    .radical-header { padding: 1.5rem !important; border-radius: 20px !important; margin-bottom: 1.5rem !important; }
+    .radical-header h1 { font-size: 1.6rem !important; }
+    .tab-btn { font-size: 0.85rem !important; padding: 0.7rem 5px !important; }
+    .glass-card { padding: 1.2rem !important; border-radius: 20px !important; }
+    textarea { height: 120px !important; font-size: 0.9rem !important; }
+    #main-submit-btn { padding: 1.1rem !important; font-size: 1rem !important; border-radius: 15px !important; }
+    .sample-chip { font-size: 0.75rem !important; padding: 0.5rem !important; }
+  }
+</style>
+
+<div class="page fade-in">
+  <!-- Radical Header -->
+  <div class="radical-header" style="background:linear-gradient(135deg,#1565C0,#2E7D32);padding:2.5rem 2rem;border-radius:28px;margin-bottom:2.5rem;color:white;box-shadow:0 15px 35px rgba(0,0,0,0.15);position:relative;overflow:hidden;">
+    <div style="position:absolute;top:-20px;right:-20px;font-size:10rem;opacity:0.1;transform:rotate(15deg);">🧪</div>
+    <h1 style="font-family:'Poppins',sans-serif;font-size:2.2rem;font-weight:900;margin:0;letter-spacing:-1px;">Symptom AI</h1>
+    <p style="font-size:1rem;font-weight:600;margin-top:0.5rem;opacity:0.9;">Choose your input method below</p>
+  </div>
+
+  <form id="symptom-form" method="POST" action="/analyze" enctype="multipart/form-data">
+
+    <!-- Modern App Tabs -->
+    <div style="background:rgba(255,255,255,0.8);backdrop-filter:blur(10px);padding:0.5rem;border-radius:20px;display:flex;gap:0.5rem;margin-bottom:2rem;box-shadow:0 8px 25px rgba(0,0,0,0.03);border:1px solid rgba(0,0,0,0.05);">
+      <button type="button" class="tab-btn active" onclick="switchTab('text',this)" style="flex:1;border-radius:15px;padding:0.8rem;font-weight:800; cursor: pointer;">✍️ Text</button>
+      <button type="button" class="tab-btn" onclick="switchTab('voice',this)" style="flex:1;border-radius:15px;padding:0.8rem;font-weight:800; cursor: pointer;">🎤 Voice</button>
+      <button type="button" class="tab-btn" onclick="switchTab('photo',this)" style="flex:1;border-radius:15px;padding:0.8rem;font-weight:800; cursor: pointer;">📷 Photo</button>
+    </div>
+
+    <!-- TEXT TAB -->
+    <div id="tab-text" class="tab-pane active">
+      <div class="card glass-card" style="margin-bottom:2rem;padding:2rem;border-radius:28px;">
+        <div class="form-group">
+          <label class="form-label" style="font-size:1.1rem;font-weight:800;color:#1a237e;margin-bottom:1rem;display:block;">📝 Tell us how you feel</label>
+          <textarea id="symptoms_text" name="symptoms_text" class="form-control" 
+                    placeholder="e.g. I have a throbbing headache, high fever, and sensitivity to light..." 
+                    style="height:160px;border-radius:20px;background:rgba(255,255,255,0.9);border:1px solid #e0e0e0;padding:1.2rem;font-size:1rem;"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- VOICE TAB -->
+    <div id="tab-voice" class="tab-pane">
+      <div class="card glass-card" style="padding:2.5rem;text-align:center;border-radius:28px;margin-bottom:2rem;">
+        <div class="form-group">
+          <label class="form-label" style="font-weight:800;color:#1a237e;">Select Your Language</label>
+          <select id="voice-lang" class="form-control" style="max-width:260px;margin:0.5rem auto;border-radius:15px;font-weight:700;">
+            <option value="en-IN">English (India)</option>
+            <option value="hi-IN">Hindi (हिंदी)</option>
+            <option value="kn-IN">Kannada (ಕನ್ನಡ)</option>
+          </select>
+        </div>
+        <div id="mic-btn" onclick="toggleVoice()"
+          style="width:100px;height:100px;border-radius:50%;background:linear-gradient(135deg,#2E7D32,#1565C0);
+                 display:flex;align-items:center;justify-content:center;margin:2rem auto;cursor:pointer;
+                 font-size:3rem;box-shadow:0 15px 30px rgba(46,125,50,0.3);transition:0.3s;animation:pulse-soft 2s infinite;">
+          🎤
+        </div>
+        <p id="voice-status" style="color:#5c6bc0;font-size:0.95rem;font-weight:700;">Tap the pulse to speak</p>
+        <div id="voice-result" style="display:none;background:rgba(255,255,255,0.8);border-radius:18px;padding:1.2rem;text-align:left;margin-top:1.5rem;border:1px solid #e0e0e0;">
+          <p style="font-size:0.95rem;color:#424242;font-weight:600;line-height:1.4;" id="voice-text"></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- PHOTO TAB -->
+    <div id="tab-photo" class="tab-pane">
+      <div class="card glass-card" style="padding:2rem;border-radius:28px;margin-bottom:2rem;">
+        <div style="background:rgba(227, 242, 253, 0.5);border-radius:20px;padding:1.2rem;margin-bottom:1.5rem;font-size:0.85rem;color:#1565C0;border:1px solid rgba(21, 101, 192, 0.1);">
+          <p style="font-weight:800;margin-bottom:0.6rem;text-transform:uppercase;letter-spacing:0.5px;">📸 Image Analysis Best For:</p>
+          <p style="font-weight:600;line-height:1.5;">✅ Skin Rashes · Red Eyes · Swollen Limbs · Dental/Oral Issues<br>
+             ❌ Not useful for internal pains (Chest, Stomach, Headache)</p>
+        </div>
+        
+        <div style="display:flex;gap:1rem;margin-bottom:1.5rem;">
+          <label class="btn btn-secondary btn-full" style="cursor:pointer;padding:1rem;border-radius:18px;font-weight:800;">
+            📁 Upload Gallery
+            <input type="file" name="photo" id="photo-input-file" accept="image/*" style="display:none;" onchange="previewPhoto(this)"/>
+          </label>
+          <label class="btn btn-outline btn-full" style="cursor:pointer;padding:1rem;border-radius:18px;font-weight:800;border-width:2px;">
+            📷 Snap Camera
+            <input type="file" name="photo" id="camera-input" accept="image/*" capture="environment" style="display:none;" onchange="previewPhoto(this)"/>
+          </label>
+        </div>
+
+        <div id="photo-preview" style="display:none;margin-bottom:1.5rem;text-align:center;">
+          <img id="preview-img" style="max-height:220px;border-radius:20px;box-shadow:0 10px 25px rgba(0,0,0,0.1);border:3px solid #fff;"/>
+        </div>
+
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label" style="font-weight:800;color:#1a237e;">Photo Context</label>
+          <input type="text" id="photo-desc" class="form-control" placeholder="e.g. Itching since yesterday morning" style="border-radius:15px;background:rgba(255,255,255,0.8);"/>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Submit Button -->
+    <div id="submit-section" style="margin-top: 1rem;">
+      <button type="submit" id="main-submit-btn" class="btn btn-primary btn-lg btn-full" style="padding:1.4rem;border-radius:22px;background:linear-gradient(135deg, #1565C0, #2E7D32);font-weight:900;font-size:1.2rem;box-shadow:0 15px 30px rgba(0,0,0,0.15);border:none;">
+        🔬 Run AI Medical Scan
+      </button>
+    </div>
+
+    <!-- Consolidated Loading State -->
+    <div id="main-loading-state" style="display:none;text-align:center;margin:3rem 0;">
+      <div style="font-size:5rem;margin-bottom:1rem;animation:pulse-soft 1s infinite;">🏥</div>
+      <h2 style="color:#1a237e;font-weight:900;margin:0;">DIAGNOSING...</h2>
+      <p style="color:#757575;font-size:0.95rem;font-weight:600;margin-top:0.5rem;">Analyzing symptoms with Gemini AI</p>
+      <div style="margin-top: 1rem;">
+        <div style="font-size:1.5rem;margin-bottom:0.5rem;">⏳</div>
+        <p style="color:#2E7D32;font-weight:600;">This usually takes a few seconds</p>
+      </div>
+    </div>
+
+  </form>
+
+  <div class="disclaimer" style="margin-top:2rem;">
+    ⚠️ This tool is for informational purposes only. Always consult a doctor for medical advice.
+  </div>
+
+  <!-- Sample Inputs for Accuracy -->
+  <div class="card" style="margin-top:1.5rem;background:#F1F8E9;border:1px solid #C8E6C9;">
+    <h3 style="font-size:0.95rem;font-weight:700;color:#2E7D32;margin-bottom:0.8rem;">💡 Tips for Better Accuracy</h3>
+    <p style="font-size:0.82rem;color:#424242;margin-bottom:0.5rem;">The AI works best when you describe <b>multiple</b> symptoms. Try these examples:</p>
+    <div style="display:flex;flex-direction:column;gap:0.5rem;">
+        <div class="sample-chip" onclick="fillSample('I have a high fever, continuous sneezing, and chills for 2 days.')">
+            🌡️ <b>Fever & Cold:</b> "High fever, sneezing, and chills..."
+        </div>
+        <div class="sample-chip" onclick="fillSample('I have a skin rash with itching and small dents in my nails.')">
+            🩹 <b>Skin Issue:</b> "Rash with itching and nail dents..."
+        </div>
+        <div class="sample-chip" onclick="fillSample('I have stomach pain, acidity, and vomiting after meals.')">
+            🤢 <b>Stomach Issue:</b> "Stomach pain, acidity, and vomiting..."
+        </div>
+    </div>
+    <p style="font-size:0.75rem;color:#757575;margin-top:0.8rem;"><i>Note: Providing only one symptom (like "stomach pain") may lead to generic results.</i></p>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/voice.js') }}"></script>
+<script>
+function switchTab(tab, btn) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  btn.classList.add('active');
+}
+
+function previewPhoto(input) {
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      document.getElementById('preview-img').src = e.target.result;
+      document.getElementById('photo-preview').style.display = 'block';
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+
+function fillSample(text) {
+  document.getElementById('symptoms_text').value = text;
+  switchTab('text', document.querySelector('.tab-btn'));
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+document.getElementById('symptom-form').addEventListener('submit', function(e) {
+  const text = document.getElementById('symptoms_text').value.trim();
+  const photoDesc  = document.getElementById('photo-desc').value.trim();
+  
+  // Merge photo description into text
+  if (photoDesc && !text) {
+    document.getElementById('symptoms_text').value = photoDesc;
+  } else if (photoDesc && text) {
+    document.getElementById('symptoms_text').value = text + '. ' + photoDesc;
+  }
+  
+  // Show loading state
+  document.getElementById('submit-section').style.display = 'none';
+  document.getElementById('main-loading-state').style.display = 'block';
+});
+</script>
+<style>
+.sample-chip {
+    background: white;
+    padding: 0.6rem;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: 0.2s;
+}
+.sample-chip:hover {
+    border-color: #2E7D32;
+    background: #F1F8E9;
+    transform: translateX(5px);
+}
+</style>
+{% endblock %}

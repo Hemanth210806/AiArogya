@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Doctor Registration — ArogyaAI{% endblock %}
+
+{% block content %}
+<style>
+  @media (max-width: 600px) {
+    .register-card { margin: 1rem !important; padding: 1.5rem !important; border-radius: 20px !important; }
+    .register-card h1 { font-size: 1.5rem !important; }
+    .btn-lg { padding: 1.1rem !important; font-size: 1.1rem !important; }
+    select { height: 55px !important; }
+  }
+</style>
+
+<div class="page fade-in">
+    <div class="card glass-card register-card" style="max-width:500px;margin:3rem auto;padding:2.5rem;border-radius:28px;box-shadow:0 20px 50px rgba(0,0,0,0.1);border-top:8px solid #1565C0;">
+        <div style="text-align:center;margin-bottom:2rem;">
+            <div style="font-size:3.5rem;margin-bottom:0.5rem; animation: pulse-soft 2s infinite;">👨‍⚕️</div>
+            <h1 style="font-family:'Poppins',sans-serif;font-size:1.8rem;font-weight:900;color:#1a237e;margin:0;">Join ArogyaAI</h1>
+            <p style="color:#5c6bc0;font-weight:600; font-size: 0.9rem; margin-top: 0.3rem;">Medical Professional Onboarding</p>
+        </div>
+
+        <form method="POST" action="{{ url_for('doctor.register') }}">
+            <div class="form-group" style="margin-bottom: 1.2rem;">
+                <label class="form-label" style="font-weight: 800; color: #1565C0; font-size: 0.8rem; text-transform: uppercase; margin-bottom: 0.5rem; display: block;">Full Name</label>
+                <input type="text" name="name" class="form-control" required placeholder="Dr. Enter Your Name" style="border-radius:12px;background:rgba(255,255,255,0.8); padding: 0.9rem; border: 1.5px solid #eee;"/>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 1.2rem;">
+                <label class="form-label" style="font-weight: 800; color: #1565C0; font-size: 0.8rem; text-transform: uppercase; margin-bottom: 0.5rem; display: block;">Medical Specialty</label>
+                <select name="department_id" class="form-control" required style="border-radius:12px;background:rgba(255,255,255,0.8);height:50px; padding: 0 0.9rem; border: 1.5px solid #eee; width: 100%;">
+                    <option value="" disabled selected>Select Specialty</option>
+                    {% for dept in departments %}
+                    <option value="{{ dept.id }}">{{ dept.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 1.2rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div>
+                    <label class="form-label" style="font-weight: 800; color: #1565C0; font-size: 0.8rem; text-transform: uppercase; margin-bottom: 0.5rem; display: block;">Experience (Years)</label>
+                    <input type="number" name="experience" class="form-control" required placeholder="Ex: 10" style="border-radius:12px;background:rgba(255,255,255,0.8); padding: 0.9rem; border: 1.5px solid #eee; width: 100%;"/>
+                </div>
+                <div>
+                    <label class="form-label" style="font-weight: 800; color: #1565C0; font-size: 0.8rem; text-transform: uppercase; margin-bottom: 0.5rem; display: block;">Fee (₹)</label>
+                    <input type="number" name="consultation_fee" class="form-control" required placeholder="Ex: 500" style="border-radius:12px;background:rgba(255,255,255,0.8); padding: 0.9rem; border: 1.5px solid #eee; width: 100%;"/>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 1.2rem;">
+                <label class="form-label" style="font-weight: 800; color: #1565C0; font-size: 0.8rem; text-transform: uppercase; margin-bottom: 0.5rem; display: block;">Official Email</label>
+                <input type="email" name="email" class="form-control" required placeholder="doctor@arogyaai.in" style="border-radius:12px;background:rgba(255,255,255,0.8); padding: 0.9rem; border: 1.5px solid #eee;"/>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 1.8rem;">
+                <label class="form-label" style="font-weight: 800; color: #1565C0; font-size: 0.8rem; text-transform: uppercase; margin-bottom: 0.5rem; display: block;">Secure Password</label>
+                <input type="password" name="password" class="form-control" required placeholder="••••••••" style="border-radius:12px;background:rgba(255,255,255,0.8); padding: 0.9rem; border: 1.5px solid #eee;"/>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-lg btn-full" style="padding:1.2rem;border-radius:18px;background:linear-gradient(135deg,#1565C0,#2E7D32);box-shadow:0 10px 25px rgba(0,0,0,0.15);font-weight:900; border: none;">
+                🚀 Register Account
+            </button>
+        </form>
+
+        <div style="text-align:center;margin-top:2rem;">
+            <p style="color:#757575;font-size:0.9rem; font-weight: 600;">Already have an account? <a href="{{ url_for('doctor.login') }}" style="color:#1565C0;font-weight:800;text-decoration:none; margin-left: 5px;">Login here</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}

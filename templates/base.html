@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="description" content="ArogyaAI — Your AI Health Companion for Indian patients"/>
+  <title>{% block title %}ArogyaAI{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
+  <link rel="icon" href="{{ url_for('static', filename='logo.png') }}"/>
+  {% block head %}{% endblock %}
+  <style>
+    :root {
+      --primary: #1565C0;
+      --secondary: #1E88E5;
+      --glass: rgba(255, 255, 255, 0.85);
+      --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    
+    body {
+      background: #f4f7f6;
+      margin: 0;
+      padding-bottom: 70px; /* Space for mobile bottom nav */
+    }
+
+    @media (min-width: 768px) {
+      body { padding-bottom: 0; }
+      .mobile-bottom-nav { display: none !important; }
+    }
+
+    .page-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 1rem;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    /* Mobile Bottom Nav */
+    .mobile-bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--glass);
+      backdrop-filter: blur(15px);
+      display: flex;
+      justify-content: space-around;
+      padding: 10px 0 calc(10px + var(--safe-area-inset-bottom));
+      border-top: 1px solid rgba(0,0,0,0.05);
+      z-index: 1000;
+      box-shadow: 0 -5px 15px rgba(0,0,0,0.03);
+    }
+
+    .bottom-nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-decoration: none;
+      color: #666;
+      font-size: 0.7rem;
+      font-weight: 600;
+    }
+    .bottom-nav-item span { font-size: 1.4rem; margin-bottom: 2px; }
+    .bottom-nav-item.active { color: var(--primary); }
+    
+    @media (max-width: 600px) {
+      .navbar-brand span:last-child { font-size: 1.1rem; }
+    }
+  </style>
+</head>
+<body class="{% if request.endpoint in ['auth.login', 'auth.guest', 'emergency_page'] %}no-nav{% endif %}">
+
+{% if request.endpoint not in ['auth.login', 'auth.guest', 'emergency_page'] %}
+<style>
+  .navbar-links-container {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding: 0.2rem 0;
+    margin-left: 1rem;
+    flex: 1;
+    justify-content: flex-end;
+  }
+  .navbar-links-container::-webkit-scrollbar { display: none; }
+  
+  @media (max-width: 600px) {
+    .nav-chip {
+      padding: 0.4rem 0.6rem !important;
+      font-size: 0.8rem !important;
+      gap: 0.3rem !important;
+    }
+    .btn-sos-nav {
+      padding: 0.4rem 0.8rem !important;
+      font-size: 0.75rem !important;
+    }
+    .navbar-brand span:last-child { display: none; } /* Hide text logo on mobile if it's too tight */
+  }
+</style>
+
+<nav class="navbar">
+  <a href="/dashboard" class="navbar-brand">
+    <img src="{{ url_for('static', filename='logo.png') }}" class="logo-img" alt="ArogyaAI Logo">
+    <span>ArogyaAI</span>
+  </a>
+  <div class="navbar-links-container">
+    {% if session.get('user_id') or session.get('doctor_id') %}
+        <!-- Notification Bell -->
+        <div style="position: relative; margin-right: 5px;">
+            <button onclick="toggleNotifs()" class="nav-chip" style="background: transparent; border: none; font-size: 1.2rem; cursor: pointer; padding: 0.5rem;">
+                🔔
+                <span id="notif-badge" style="position: absolute; top: 0; right: 0; background: #d32f2f; color: white; border-radius: 50%; font-size: 0.65rem; padding: 2px 6px; font-weight: 800; {% if unread_notifs == 0 %} display: none; {% endif %}">
+                    {{ unread_notifs }}
+                </span>
+            </button>
+        </div>
+        
+        <a href='/logout' class='nav-chip'>🚪 Logout</a>
+        {% if session.get('user_id') %}
+          <button onclick='triggerSOS(event)' class='btn btn-sos-nav'>🚨 SOS</button>
+        {% endif %}
+    {% else %}
+        <a href="/doctor/login" class="nav-chip">👨‍⚕️ Login</a>
+    {% endif %}
+  </div>
+</nav>
+
+<!-- Notifications Dropdown -->
+<div id="notif-dropdown" class="card glass-card fade-in" style="display:none;position:fixed;top:70px;right:20px;width:300px;z-index:1001;padding:1rem;max-height:400px;overflow-y:auto;">
+  <h3 style="font-size:1rem;margin-bottom:1rem;display:flex;justify-content:space-between;">
+    Notifications
+    <span onclick="markAllRead()" style="font-size:0.7rem;color:#1565C0;cursor:pointer;">Mark all as read</span>
+  </h3>
+  <div id="notif-list">
+    <p style="text-align:center;color:#999;font-size:0.85rem;">No new notifications</p>
+  </div>
+</div>
+{% endif %}
+
+<!-- Mobile Bottom Nav -->
+{% if session.get('user_id') or session.get('doctor_id') %}
+<div class="mobile-bottom-nav">
+    <a href="/dashboard" class="bottom-nav-item {{ 'active' if request.path == '/dashboard' }}">
+        <span>🏠</span>Home
+    </a>
+    <a href="/hospitals" class="bottom-nav-item {{ 'active' if request.path == '/hospitals' }}">
+        <span>🏥</span>Nearby
+    </a>
+    <a href="/prescriptions" class="bottom-nav-item {{ 'active' if request.path == '/prescriptions' }}">
+        <span>💊</span>Meds
+    </a>
+    <a href="/history" class="bottom-nav-item {{ 'active' if request.path == '/history' }}">
+        <span>🕒</span>History
+    </a>
+</div>
+{% endif %}
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div class="flash-messages">
+    {% for category, message in messages %}
+    <div class="alert alert-{{ 'error' if category == 'error' else 'success' if category == 'success' else 'info' }}">
+      {{ '❌' if category == 'error' else '✅' if category == 'success' else 'ℹ️' }} {{ message }}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+{% endwith %}
+
+<div class="page-container">
+    {% block content %}{% endblock %}
+</div>
+
+<!-- SOS Modal -->
+<div id="sos-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:999;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:16px;padding:2rem;max-width:340px;width:90%;text-align:center;">
+    <div style="font-size:3rem;margin-bottom:1rem;">🚨</div>
+    <h2 style="color:#C62828;margin-bottom:0.5rem;">Emergency SOS</h2>
+    <p style="margin-bottom:1.5rem;color:#555;">Alert your emergency contact and call 108 immediately.</p>
+    <div style="display:flex;gap:0.5rem;flex-direction:column;">
+      <a href="tel:108" class="btn btn-danger btn-lg btn-full">📞 Call 108 Now</a>
+      <button id="sos-alert-btn" onclick="sendSOSAlert()" class="btn btn-warning btn-full">📱 Send Emergency Alert</button>
+      <div id="sos-wa-container" style="display:none;margin-top:0.5rem;">
+          <p style="font-size:0.8rem;color:#757575;margin-bottom:0.4rem;">Or use WhatsApp (Free):</p>
+          <a id="sos-wa-btn" href="#" target="_blank" class="btn btn-success btn-full" style="background:#25D366;border:none;">💬 Alert via WhatsApp</a>
+      </div>
+      <button onclick="document.getElementById('sos-modal').style.display='none'" class="btn btn-outline btn-full">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script>
+function triggerSOS(e) {
+  if(e) e.preventDefault();
+  const modal = document.getElementById('sos-modal');
+  modal.style.display = 'flex';
+}
+function sendSOSAlert() {
+  const btn = document.getElementById('sos-alert-btn');
+  btn.textContent = '⏳ Sending...';
+  btn.disabled = true;
+
+  fetch('/sos', {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'})
+    .then(r=>r.json()).then(d=>{
+      if(d.wa_link) {
+          document.getElementById('sos-wa-btn').href = d.wa_link;
+          document.getElementById('sos-wa-container').style.display = 'block';
+      }
+      if(d.status==='preview') {
+          alert('📱 Alert Ready!\n\nNote: Please use the WhatsApp button or your phone to send the message.');
+          btn.textContent = '✅ Ready';
+      } else if(d.status==='sent') {
+          btn.textContent = '✅ Sent!';
+          alert('✅ Emergency alert sent via SMS!');
+      } else if(d.status==='no_contact') {
+          btn.textContent = '⚠️ No Contact';
+          alert('No emergency contact saved. Please update in login.');
+      } else {
+          btn.textContent = '❌ Failed';
+          btn.disabled = false;
+          alert('Failed to send SMS. Please use WhatsApp.');
+      }
+    }).catch(()=>{
+        btn.textContent = '❌ Error';
+        btn.disabled = false;
+    });
+}
+
+// SocketIO Setup
+const socket = io();
+const currentUserId = "{{ session.get('user_id') or session.get('doctor_id') }}";
+const userType = "{{ 'doctor' if session.get('is_doctor') else 'patient' }}";
+
+if(currentUserId) {
+  socket.emit('join', {user_id: currentUserId, type: userType});
+}
+
+socket.on('new_notification', (data) => {
+  const badge = document.getElementById('notif-badge');
+  if(badge) {
+    badge.style.display = 'block';
+    badge.textContent = parseInt(badge.textContent || 0) + 1;
+  }
+  
+  // Show a small toast or play sound
+  console.log("New Notif:", data.message);
+  showToast(data.message);
+});
+
+function toggleNotifs() {
+  const dropdown = document.getElementById('notif-dropdown');
+  dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+  if(dropdown.style.display === 'block') {
+    loadNotifications();
+  }
+}
+
+function loadNotifications() {
+  fetch('/get-notifications')
+    .then(r => r.json())
+    .then(data => {
+      const list = document.getElementById('notif-list');
+      if(data.length === 0) {
+        list.innerHTML = '<p style="text-align:center;color:#999;font-size:0.85rem;">No notifications</p>';
+      } else {
+        list.innerHTML = data.map(n => `
+          <div style="padding:0.8rem 0;border-bottom:1px solid #eee;font-size:0.85rem;${n.is_read ? 'opacity:0.6' : 'font-weight:600'}">
+            ${n.message}
+            <div style="font-size:0.7rem;color:#999;margin-top:0.2rem;">${n.created_at}</div>
+          </div>
+        `).join('');
+      }
+    });
+}
+
+function markAllRead() {
+  fetch('/mark-notifs-read', {method:'POST'})
+    .then(() => {
+      const badge = document.getElementById('notif-badge');
+      if(badge) badge.style.display = 'none';
+      loadNotifications();
+    });
+}
+
+function showToast(msg) {
+  const toast = document.createElement('div');
+  toast.className = 'card fade-in';
+  toast.style = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:10000;background:#333;color:#fff;padding:0.8rem 1.5rem;border-radius:30px;font-size:0.9rem;box-shadow:0 10px 30px rgba(0,0,0,0.3);';
+  toast.innerHTML = `🔔 ${msg}`;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 4000);
+}
+
+// ─── Location Tracking for SOS ───────────────────────────────────────
+function updateLocation() {
+    if (!navigator.geolocation) return;
+    
+    navigator.geolocation.getCurrentPosition(position => {
+        const { latitude, longitude } = position.coords;
+        fetch('/update-location', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ lat: latitude, lng: longitude })
+        });
+    }, error => {
+        console.warn("Location access denied or unavailable.");
+    }, { enableHighAccuracy: true });
+}
+
+// Check for location on load and then every 2 minutes
+if(currentUserId && userType === 'patient') {
+    updateLocation();
+    setInterval(updateLocation, 120000); 
+}
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

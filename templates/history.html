@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Analysis History — ArogyaAI{% endblock %}
+
+{% block content %}
+<style>
+  @media (max-width: 600px) {
+    .section-title { font-size: 1.5rem !important; }
+    .glass-card { padding: 1.2rem !important; border-radius: 20px !important; }
+    .glass-card h2 { font-size: 1.1rem !important; }
+    .card-footer { flex-direction: column; gap: 1rem; align-items: flex-start !important; }
+    .card-footer a { width: 100%; text-align: center; }
+  }
+</style>
+
+<div class="page fade-in">
+  <div style="margin-bottom: 1.5rem;">
+    <h1 class="section-title" style="font-weight: 900; color: #1a237e;">🕒 Analysis History</h1>
+    <p class="section-subtitle" style="font-weight: 600; color: #5c6bc0;">Track your symptoms over time</p>
+  </div>
+
+  {% if history %}
+    <div style="display: flex; flex-direction: column; gap: 1rem;">
+    {% for h in history %}
+      <div class="card glass-card" style="padding: 1.5rem; border-left: 6px solid #1565C0; border-radius: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <span style="font-size: 0.75rem; font-weight: 800; color: #757575;">{{ h.created_at.strftime('%d %b, %Y • %H:%M') }}</span>
+            <span class="badge badge-info" style="font-size: 0.65rem; font-weight: 800; background: rgba(21, 101, 192, 0.1); color: #1565C0; border: none;">AI PREDICTION</span>
+        </div>
+        
+        <h2 style="font-size: 1.2rem; color: #1a237e; margin-bottom: 0.8rem;">{{ h.predicted_disease }}</h2>
+        
+        <div style="margin-bottom: 1rem;">
+            <p style="font-size: 0.75rem; color: #999; margin-bottom: 0.3rem; text-transform: uppercase; font-weight: 800;">Symptoms Entered</p>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.3rem;">
+              {% for s in h.symptoms_entered|fromjson %}
+                <span class="badge" style="background: #e8f5e9; color: #2e7d32; font-size: 0.75rem;">{{ s.replace('_',' ').title() }}</span>
+              {% endfor %}
+            </div>
+        </div>
+
+        <div class="card-footer" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #eee; padding-top: 1rem;">
+            <p style="font-size: 0.85rem; color: #424242; font-weight: 600;">
+                Confidence: <span style="color: #1565C0; font-weight: 900;">{{ (h.confidence_score * 100)|int }}%</span>
+            </p>
+            <a href="/symptoms" class="btn btn-outline btn-sm" style="font-weight: 800; border-radius: 12px; padding: 8px 20px;">Check Again</a>
+        </div>
+      </div>
+    {% endfor %}
+    </div>
+  {% else %}
+    <div class="card" style="text-align: center; padding: 3rem; color: #999;">
+        <span style="font-size: 3rem; display: block; margin-bottom: 1rem;">🕒</span>
+        <p>No analysis history found.</p>
+        <a href="/symptoms" class="btn btn-primary btn-full mt-2">Start Your First Analysis</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,14 @@
+flask
+flask-sqlalchemy
+google-generativeai
+scikit-learn
+pandas
+numpy
+twilio
+reportlab
+pillow
+requests
+python-dotenv
+flask-socketio
+flask-cors
+gunicorn

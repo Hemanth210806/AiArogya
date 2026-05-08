@@ -1,0 +1,294 @@
+{% extends "base.html" %}
+{% block title %}Medicine Reminders — ArogyaAI{% endblock %}
+
+{% block content %}
+<style>
+  @media (max-width: 600px) {
+    .medicine-header { flex-direction: column !important; align-items: flex-start !important; gap: 1rem; padding: 1.5rem !important; }
+    .medicine-header h1 { font-size: 1.5rem !important; }
+    .medicine-header button { width: 100%; padding: 0.8rem !important; }
+    .med-card { border-radius: 20px !important; padding: 1.2rem !important; }
+    .time-slot { flex: 1; min-width: 100px; padding: 0.8rem !important; }
+    .ask-ai-btn { bottom: 6rem !important; right: 1rem !important; }
+  }
+</style>
+
+<div class="page-wide fade-in">
+  <!-- Premium Header -->
+  <div class="medicine-header" style="background:linear-gradient(135deg,#1565C0,#2E7D32);padding:2rem;border-radius:24px;margin-bottom:2rem;color:white;box-shadow:0 10px 30px rgba(0,0,0,0.1);display:flex;justify-content:space-between;align-items:center;">
+    <div>
+        <h1 style="font-family:'Poppins',sans-serif;font-size:1.8rem;font-weight:900;margin:0;">💊 Med Reminders</h1>
+        <div style="display:flex;align-items:center;gap:0.8rem;margin-top:0.5rem;opacity:0.9;">
+            <span style="background:rgba(255,255,255,0.2);padding:0.2rem 0.8rem;border-radius:20px;font-size:0.85rem;font-weight:700;">🌟 {{ total_points }} Points</span>
+            <span style="font-size:0.85rem;font-weight:600;">{{ level_emoji }} {{ level_name }}</span>
+        </div>
+    </div>
+    <button onclick="document.getElementById('add-med-modal').style.display='flex'" class="btn btn-primary" style="background:#fff;color:#1565C0;border-radius:15px;padding:0.7rem 1.2rem; font-weight: 700;">
+        ➕ Add Medicine
+    </button>
+  </div>
+
+  <!-- Alert Permission Prompt -->
+  <div id="alert-permission" style="background:#fff3e0;border:1px solid #ffe0b2;padding:1rem;border-radius:18px;margin-bottom:1.5rem;display:flex;justify-content:space-between;align-items:center;">
+    <div style="display:flex;gap:1rem;align-items:center;">
+        <span style="font-size:1.5rem;">🔔</span>
+        <p style="margin:0;font-size:0.85rem;color:#e65100;font-weight:600;">Enable sound & vibration for reminders?</p>
+    </div>
+    <button onclick="enableAlerts()" class="btn btn-sm" style="background:#e65100;color:white;border:none;border-radius:10px;padding:0.5rem 1rem;">Enable</button>
+  </div>
+
+  <div class="med-list">
+    {% if not medicines %}
+      <div class="card glass-card" style="text-align:center;padding:4rem 2rem;border-radius:28px;">
+        <div style="font-size:4rem;margin-bottom:1.5rem;animation:pulse-soft 2s infinite;">💊</div>
+        <h3 style="color:#1a237e;font-size:1.3rem;font-weight:800;">No medicines active</h3>
+        <p style="font-size:0.95rem;color:#757575;max-width:280px;margin:0.5rem auto;">Add your prescriptions to earn points and stay on top of your health!</p>
+      </div>
+    {% endif %}
+
+    {% for med in medicines %}
+    <div class="card glass-card med-card" data-id="{{ med.id }}" data-name="{{ med.name }}" style="margin-bottom:1.5rem;border-radius:24px;border-left:8px solid #2E7D32;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div>
+          <h3 style="font-size:1.25rem;font-weight:900;color:#1a237e;margin-bottom:0.2rem;">{{ med.name }}</h3>
+          <p style="font-size:0.9rem;color:#5c6bc0;font-weight:600;">{{ med.dosage }} · Day {{ med.current_day }} of {{ med.duration }}</p>
+          <div style="width: 100px; height: 6px; background: #eee; border-radius: 3px; margin-top: 5px;">
+              <div style="width: {{ (med.current_day / med.duration) * 100 }}%; height: 100%; background: #2E7D32; border-radius: 3px;"></div>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.5rem;">
+            <span style="background:#E8F5E9;color:#2E7D32;padding:0.4rem 1rem;border-radius:15px;font-size:0.8rem;font-weight:800;">{{ med.times_per_day }}x DAILY</span>
+            <button onclick="deleteMed({{ med.id }})" style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #ff5252;">🗑️</button>
+        </div>
+      </div>
+
+      <div style="margin-top:1.5rem;">
+        <p style="font-size:0.75rem;font-weight:800;color:#9e9e9e;text-transform:uppercase;letter-spacing:1px;margin-bottom:0.8rem;">Daily Schedule</p>
+        <div style="display:flex;gap:0.8rem;flex-wrap:wrap;">
+          {% for time in med.schedule | fromjson %}
+          {% set slot_key = med.id ~ "-" ~ time %}
+          <button onclick="markTaken({{ med.id }}, '{{ time }}', this)" 
+                  class="btn {% if slot_key in taken_slots %}btn-success{% else %}btn-outline{% endif %} time-slot" 
+                  data-time="{{ time }}"
+                  {% if slot_key in taken_slots %}disabled{% endif %}
+                  style="border-radius:15px;padding:0.6rem 1rem;font-size:0.9rem;">
+            ⏰ {{ time }}
+          </button>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+    </div>
+
+  <!-- Chatbot Float -->
+  <a href="/chatbot" class="btn btn-primary ask-ai-btn" style="position:fixed;bottom:2rem;right:1.5rem;border-radius:30px;box-shadow:0 10px 25px rgba(0,0,0,0.2);padding:0.75rem 1.2rem;display:flex;align-items:center;gap:0.5rem;z-index:99;">
+    <span>💬 Ask AI</span>
+  </a>
+</div>
+
+<!-- Add Medicine Modal -->
+<div id="add-med-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center;">
+  <div class="card" style="width:90%;max-width:400px;max-height:90vh;overflow-y:auto;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
+      <h2 style="font-size:1.2rem;font-weight:700;">Add Medicine</h2>
+      <button onclick="document.getElementById('add-med-modal').style.display='none'" style="background:none;border:none;font-size:1.5rem;">&times;</button>
+    </div>
+    <form action="/medicine/add" method="POST">
+      <div class="form-group">
+        <label class="form-label">Medicine Name</label>
+        <input type="text" name="name" class="form-control" placeholder="e.g. Paracetamol" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Dosage</label>
+        <input type="text" name="dosage" class="form-control" placeholder="e.g. 500mg" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Start Date</label>
+        <input type="date" name="start_date" class="form-control" value="{{ now_date }}" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Duration (Days)</label>
+        <input type="number" name="duration" class="form-control" value="7" min="1">
+      </div>
+      <div class="form-group">
+        <label class="form-label">How many times a day?</label>
+        <select name="times_per_day" class="form-control" id="times-select" onchange="updateTimeInputs()">
+          <option value="1">Once a day</option>
+          <option value="2">Twice a day</option>
+          <option value="3">Thrice a day</option>
+          <option value="4">Four times a day</option>
+        </select>
+      </div>
+      <div id="time-inputs">
+        <div class="form-group">
+          <label class="form-label">Time 1</label>
+          <input type="time" name="time_1" class="form-control" value="09:00" required>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary btn-full mt-2">✅ Save Reminder</button>
+    </form>
+  </div>
+</div>
+
+<!-- Alert Audio (Beep) -->
+<audio id="alert-sound" preload="auto">
+  <source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" type="audio/mpeg">
+</audio>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Alert Audio (Beep) - More reliable source
+const alertSound = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3");
+alertSound.loop = true;
+
+function enableAlerts() {
+    alertsEnabled = true;
+    // Play sound silently to unlock audio context
+    alertSound.play().then(() => {
+        alertSound.pause();
+        alertSound.currentTime = 0;
+    }).catch(e => console.log("Audio unlock failed:", e));
+    
+    // Test vibration
+    if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+    
+    document.getElementById('alert-permission').style.display = 'none';
+    localStorage.setItem('arogya_alerts', 'enabled');
+    alert("🔔 Alerts enabled! The app will vibrate and beep when it's time for medicine.");
+}
+
+function deleteMed(id) {
+    if(!confirm("Are you sure you want to remove this medicine?")) return;
+    fetch(`/medicine/delete/${id}`, {method: 'POST'})
+        .then(r => r.json())
+        .then(d => {
+            if(d.status === 'ok') location.reload();
+        });
+}
+
+// Check stored preference
+if (localStorage.getItem('arogya_alerts') === 'enabled') {
+    document.getElementById('alert-permission').style.display = 'none';
+    alertsEnabled = true;
+}
+
+function updateTimeInputs() {
+  const count = document.getElementById('times-select').value;
+  const container = document.getElementById('time-inputs');
+  container.innerHTML = '';
+  const defaultTimes = ["09:00", "14:00", "19:00", "22:00"];
+  for (let i = 1; i <= count; i++) {
+    container.innerHTML += `
+      <div class="form-group">
+        <label class="form-label">Time ${i}</label>
+        <input type="time" name="time_${i}" class="form-control" value="${defaultTimes[i-1] || '09:00'}" required>
+      </div>
+    `;
+  }
+}
+
+function markTaken(medId, time, btn) {
+  const formData = new FormData();
+  formData.append('scheduled_time', time);
+  
+  btn.textContent = '⏳ ...';
+  btn.disabled = true;
+
+  fetch(`/medicine/taken/${medId}`, {
+    method: 'POST',
+    body: formData
+  })
+  .then(r => r.json())
+  .then(d => {
+    btn.textContent = '✅ Taken';
+    btn.classList.remove('btn-outline');
+    btn.classList.add('btn-success');
+    // Stop sound if it was playing
+    alertSound.pause();
+    alertSound.currentTime = 0;
+    
+    // Simple point animation
+    const float = document.createElement('div');
+    float.textContent = `+${d.points} Points!`;
+    float.style.cssText = 'position:fixed;color:#2E7D32;font-weight:700;animation:floatUp 1s forwards;';
+    btn.appendChild(float);
+  });
+}
+
+// ─── Background Reminder Engine ──────────────────────────────────────────────
+const alertedTimes = new Set();
+
+function checkReminders() {
+    if (!alertsEnabled) return;
+    
+    const now = new Date();
+    const today = now.toISOString().split('T')[0]; // YYYY-MM-DD
+    const currentTime = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
+    
+    document.querySelectorAll('.time-slot').forEach(btn => {
+        const scheduledTime = btn.getAttribute('data-time');
+        const medName = btn.closest('.med-card').getAttribute('data-name');
+        const alertKey = `${today}-${medName}-${scheduledTime}`;
+
+        // If time matches and we haven't alerted for this exact date/minute yet
+        if (currentTime === scheduledTime && !alertedTimes.has(alertKey) && !btn.classList.contains('btn-success')) {
+            triggerAlert(medName, scheduledTime);
+            alertedTimes.add(alertKey);
+        }
+    });
+}
+
+function triggerAlert(name, time) {
+    // 1. Vibration
+    if (navigator.vibrate) {
+        navigator.vibrate([500, 200, 500, 200, 500, 200, 500]); // Pulse
+    }
+    
+    // 2. Sound
+    alertSound.play().catch(e => {
+        console.log("Sound error:", e);
+        // Fallback to visual alert if sound fails
+    });
+    
+    // 3. UI Alert
+    const notification = document.createElement('div');
+    notification.id = 'active-notification';
+    notification.style.cssText = 'position:fixed;top:1rem;left:50%;transform:translateX(-50%);background:#2E7D32;color:white;padding:1.5rem;border-radius:16px;z-index:9999;box-shadow:0 15px 40px rgba(0,0,0,0.4);width:90%;max-width:380px;display:flex;align-items:center;gap:1.5rem;border:2px solid #fff;';
+    notification.innerHTML = `
+        <div style="font-size:2.5rem;animation:shake 0.5s infinite;">🔔</div>
+        <div style="flex:1;">
+            <p style="margin:0;font-weight:800;font-size:1.1rem;">Time for Medicine!</p>
+            <p style="margin:0.2rem 0 0.5rem 0;font-size:0.95rem;">Take <b>${name}</b> at <b>${time}</b></p>
+            <button onclick="stopReminderAlert()" style="background:#fff;border:none;color:#2E7D32;padding:0.5rem 1rem;border-radius:8px;font-weight:700;width:100%;">OK, I'm Taking It</button>
+        </div>
+    `;
+    document.body.appendChild(notification);
+}
+
+function stopReminderAlert() {
+    const notification = document.getElementById('active-notification');
+    if (notification) notification.remove();
+    alertSound.pause();
+    alertSound.currentTime = 0;
+}
+
+// Run check every 10 seconds for higher precision
+setInterval(checkReminders, 10000);
+</script>
+<style>
+@keyframes floatUp {
+  0% { transform: translateY(0); opacity: 1; }
+  100% { transform: translateY(-30px); opacity: 0; }
+}
+@keyframes shake {
+  0% { transform: rotate(0deg); }
+  25% { transform: rotate(10deg); }
+  50% { transform: rotate(0deg); }
+  75% { transform: rotate(-10deg); }
+  100% { transform: rotate(0deg); }
+}
+</style>
+{% endblock %}

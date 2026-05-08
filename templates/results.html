@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}Results — ArogyaAI{% endblock %}
+
+{% block content %}
+<style>
+  @media (max-width: 600px) {
+    .section-title { font-size: 1.5rem !important; }
+    .glass-card { padding: 1.2rem !important; border-radius: 20px !important; }
+    .btn-lg { padding: 1.1rem !important; font-size: 1.1rem !important; }
+  }
+</style>
+
+<div class="page fade-in">
+  <div style="margin-bottom:1.2rem;">
+    <h1 class="section-title" style="font-weight: 900; color: #1a237e;">🔬 Analysis Results</h1>
+    <p class="section-subtitle" style="font-weight: 600; color: #5c6bc0;">Based on your symptoms</p>
+  </div>
+
+  <!-- Intensity & Duration -->
+  <div style="display:flex;gap:0.5rem;margin-bottom:1.2rem;flex-wrap:wrap;">
+    <span class="badge {% if intensity == 'HIGH' %}badge-danger{% elif intensity == 'LOW' %}badge-success{% else %}badge-warning{% endif %}">
+      ⚡ {{ intensity }} Intensity
+    </span>
+    <span class="badge badge-info">🕐 Since {{ duration }}</span>
+  </div>
+
+  <!-- Top 5 Diseases -->
+  <div class="card glass-card" style="margin-bottom:1.5rem;padding:2rem;border-radius:24px;border-top:8px solid #1565C0;">
+    <h2 style="font-size:1.1rem;font-weight:800;margin-bottom:1.5rem;color:#1a237e;text-transform:uppercase;letter-spacing:1px;">📊 Condition Probability</h2>
+    
+    <div class="predictions-list" style="margin-bottom: 2rem;">
+        {% for p in predictions %}
+        <div class="prediction-item" style="margin-bottom: 1.2rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                <span class="disease-name" style="font-weight: 800; font-size: 1.1rem; color: #1a237e;">
+                    {{ p.disease }}
+                    {% if p.ai_refined %}
+                    <span class="badge" style="background: #e8eaf6; color: #3f51b5; font-size: 0.65rem; padding: 2px 8px; border-radius: 10px; margin-left: 5px;">AI REFINED</span>
+                    {% endif %}
+                </span>
+                <span style="font-weight: 900; font-size: 1rem; padding: 0.2rem 0.6rem; border-radius: 8px; 
+                    {% if p.percent >= 70 %} background: #FFEBEE; color: #C62828; 
+                    {% elif p.percent >= 40 %} background: #FFFDE7; color: #F9A825; 
+                    {% else %} background: #E8F5E9; color: #2E7D32; {% endif %}">
+                    {{ p.percent }}%
+                </span>
+            </div>
+            <div class="progress-container" style="height: 12px; background: #f0f2f5; border-radius: 6px; overflow: hidden;">
+                <div class="progress-bar" style="width: {{ p.percent }}%; height: 100%; 
+                    background: {% if p.percent >= 70 %} #C62828 {% elif p.percent >= 40 %} #F9A825 {% else %} #2E7D32 {% endif %}; 
+                    transition: width 1s ease-in-out;"></div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Simplified Disclaimer for Common People -->
+    <div class="card" style="background: #fff8e1; border: 1px solid #ffecb3; border-radius: 12px; padding: 1rem;">
+        {% if ai_reasoning %}
+        <p style="font-size: 0.95rem; color: #1a237e; margin-bottom: 0.5rem; font-weight: 800;">
+          🧠 AI Clinical Reasoning:
+        </p>
+        <p style="font-size: 0.9rem; color: #444; margin-bottom: 0.8rem; font-weight: 600; line-height: 1.4;">
+          {{ ai_reasoning }}
+        </p>
+        <hr style="border-top: 1px solid #ffecb3; margin: 0.8rem 0;">
+        {% endif %}
+        <p style="font-size: 0.9rem; color: #795548; margin: 0; font-weight: 600; text-align: center; line-height: 1.4;">
+            💡 Advice: Please don't only look at the first result. Sometimes the 2nd or 3rd disease is also a possibility. It is always best to show these results to a real doctor to be safe.
+        </p>
+    </div>
+  </div>
+
+  <!-- Extracted Symptoms -->
+  {% if extracted_symptoms %}
+  <div class="card" style="margin-bottom:1.2rem;">
+    <h3 style="font-size:0.9rem;font-weight:700;color:#555;margin-bottom:0.5rem;">🩺 Symptoms Detected</h3>
+    <div style="display:flex;flex-wrap:wrap;gap:0.4rem;">
+      {% for s in extracted_symptoms %}
+      <span style="background:#E8F5E9;color:#2E7D32;padding:0.25rem 0.6rem;border-radius:20px;font-size:0.8rem;font-weight:500;">
+        {{ s.replace('_',' ').title() }}
+      </span>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Disease Description -->
+  {% if severity.description %}
+  <div class="card" style="margin-bottom:1.2rem;border-left:4px solid #1565C0;">
+    <h3 style="font-size:0.9rem;font-weight:700;color:#1565C0;margin-bottom:0.5rem;">ℹ️ About {{ top_disease }}</h3>
+    <p style="font-size:0.88rem;color:#424242;line-height:1.6;">{{ severity.description }}</p>
+  </div>
+  {% endif %}
+
+  <!-- CTA -->
+  <a href="/severity-page" class="btn btn-primary btn-lg btn-full mt-3">
+    👉 See What To Do Now
+  </a>
+  <a href="/symptoms" class="btn btn-outline btn-full mt-2">🔄 Check Again</a>
+</div>
+{% endblock %}

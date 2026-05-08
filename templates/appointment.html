@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+{% block title %}Book Appointment — ArogyaAI{% endblock %}
+
+{% block content %}
+<style>
+  @media (max-width: 600px) {
+    .confirmation-grid { grid-template-columns: 1fr !important; }
+    .confirmation-grid > div { grid-column: span 1 !important; }
+    .doctor-profile { flex-direction: column; text-align: center; }
+    .doctor-profile div { width: 100%; }
+    .slots-grid { grid-template-columns: 1fr 1fr !important; }
+    .form-grid-2 { grid-template-columns: 1fr !important; }
+    .section-title { font-size: 1.5rem !important; }
+  }
+</style>
+
+<div class="page fade-in">
+
+{% if view_list %}
+  <!-- My Appointments View -->
+  <div style="background:linear-gradient(135deg,#1565C0,#2E7D32);padding:2rem;border-radius:24px;margin-bottom:2rem;color:white;box-shadow:0 10px 30px rgba(0,0,0,0.1);">
+    <h1 style="font-family:'Poppins',sans-serif;font-size:1.8rem;font-weight:900;margin:0;">📅 My Appointments</h1>
+    <p style="font-size:0.95rem;font-weight:600;margin-top:0.4rem;opacity:0.9;">Manage your scheduled consultations</p>
+  </div>
+
+  <div class="booking-list">
+    {% if not bookings %}
+      <div class="card glass-card" style="text-align:center;padding:4rem 2rem;">
+        <div style="font-size:4rem;margin-bottom:1rem;">📅</div>
+        <h3 style="font-weight:800;color:#1a237e;">No appointments yet</h3>
+        <p style="color:#757575;margin-bottom:1.5rem;">Book a specialist to start your health journey.</p>
+        <a href="/dashboard" class="btn btn-primary">Find a Doctor</a>
+      </div>
+    {% endif %}
+
+    {% for b in bookings %}
+    <div class="card glass-card" style="margin-bottom:1rem;border-radius:20px;padding:1.2rem;border-left:8px solid #1565C0;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;">
+        <div style="flex:1;">
+          <h3 style="font-size:1rem;font-weight:800;color:#1a237e;margin:0;">{{ b.slot.doctor.name }}</h3>
+          <p style="font-size:0.8rem;color:#5c6bc0;font-weight:600;margin:0.2rem 0;">{{ b.hospital_name }}</p>
+          <div style="display:flex;gap:0.8rem;margin-top:0.5rem;font-size:0.85rem;font-weight:700;">
+            <span style="color:#1565C0;">🕒 {{ b.slot.date }} @ {{ b.slot.time }}</span>
+          </div>
+        </div>
+        <div style="text-align:right;">
+          <span style="background:#E3F2FD;color:#1565C0;padding:0.3rem 0.7rem;border-radius:10px;font-size:0.75rem;font-weight:800;">CONFIRMED</span>
+          <p style="font-size:0.75rem;color:#9e9e9e;margin-top:0.5rem;font-weight:700;">ID: {{ b.booking_id }}</p>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div style="margin-top:2rem;">
+    <a href="/dashboard" class="btn btn-outline btn-full">🏠 Back to Dashboard</a>
+  </div>
+
+{% elif confirmed %}
+  <!-- Premium Confirmation Screen -->
+  <div style="text-align:center;margin-bottom:2rem;padding-top:1rem;">
+    <div style="font-size:4rem;animation:bounce-soft 2s infinite;">✅</div>
+    <h1 style="font-family:'Poppins',sans-serif;color:#2E7D32;font-size:1.8rem;font-weight:900;margin-top:0.5rem;">Success!</h1>
+    <p style="color:#5c6bc0;font-weight:600; font-size: 0.9rem;">Your consultation is secured.</p>
+  </div>
+
+  <div class="card glass-card" style="margin-bottom:1.5rem;border-radius:28px;padding:1.5rem;border-top:8px solid #2E7D32;box-shadow:0 15px 40px rgba(46,125,50,0.1);">
+    <div class="confirmation-grid" style="display:grid;gap:1.2rem;grid-template-columns:1fr 1fr;">
+      <div style="grid-column:span 2;"><span style="color:#9e9e9e;font-size:0.75rem;font-weight:800;text-transform:uppercase;">Booking ID</span><p style="font-weight:900;color:#2E7D32;font-size:1.4rem;margin:0;">#{{ booking_id }}</p></div>
+      <div><span style="color:#9e9e9e;font-size:0.75rem;font-weight:800;text-transform:uppercase;">Specialist</span><p style="font-weight:700;color:#1a237e;margin:0;">{{ doctor_name }}</p></div>
+      <div><span style="color:#9e9e9e;font-size:0.75rem;font-weight:800;text-transform:uppercase;">Department</span><p style="font-weight:700;color:#1a237e;margin:0;">{{ department }}</p></div>
+      <div style="grid-column:span 2;"><span style="color:#9e9e9e;font-size:0.75rem;font-weight:800;text-transform:uppercase;">Facility</span><p style="font-weight:700;color:#1a237e;margin:0;">{{ hospital }}</p></div>
+      <div><span style="color:#9e9e9e;font-size:0.75rem;font-weight:800;text-transform:uppercase;">Schedule</span><p style="font-weight:700;color:#1a237e;margin:0;">{{ appt_date }}</p></div>
+      <div><span style="color:#9e9e9e;font-size:0.75rem;font-weight:800;text-transform:uppercase;">Time Slot</span><p style="font-weight:700;color:#1a237e;margin:0;">{{ appt_time }}</p></div>
+    </div>
+  </div>
+
+  <div style="background:rgba(46, 125, 50, 0.05);border-radius:18px;padding:1.2rem;margin-bottom:2rem;display:flex;gap:1rem;align-items:center;border:1px solid rgba(46, 125, 50, 0.1);">
+    <span style="font-size:1.5rem;">📱</span>
+    <p style="font-size:0.9rem;color:#2E7D32;margin:0;font-weight:600;">Please arrive 10 mins early with your Booking ID.</p>
+  </div>
+
+  {% if wa_link %}
+  <div class="card glass-card" style="margin-bottom:1.5rem;border-radius:24px;border-left:8px solid #25D366;padding:1.5rem;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+        <h3 style="font-size:1rem;font-weight:800;color:#128C7E;margin:0;">💬 WhatsApp Link</h3>
+        <span style="background:#25D366;color:white;padding:0.2rem 0.6rem;border-radius:10px;font-size:0.7rem;font-weight:800;">READY</span>
+    </div>
+    <p style="font-size:0.85rem;color:#424242;margin-bottom:1.5rem;line-height:1.4;">Send your booking details to the clinic immediately via WhatsApp for faster check-in.</p>
+    <a id="auto-wa-btn" href="{{ wa_link }}" target="_blank" class="btn btn-success btn-full" style="background:#25D366;border:none;font-weight:800;padding:1.1rem;box-shadow:0 10px 20px rgba(37,211,102,0.2);">
+        🚀 Send Confirmation Now
+    </a>
+  </div>
+  {% endif %}
+
+  <div style="display:flex;flex-direction:column;gap:0.8rem;">
+    <a href="/report" class="btn btn-primary btn-full" style="padding:1.1rem;background:linear-gradient(135deg,#1565C0,#2E7D32);border:none;">📄 Download Health Report</a>
+    <a href="/dashboard" class="btn btn-outline btn-full" style="padding:1rem;">🏠 Back to Home</a>
+  </div>
+
+{% elif doctor %}
+  <!-- Premium Header -->
+  <div style="background:linear-gradient(135deg,#1565C0,#2E7D32);padding:2rem;border-radius:24px;margin-bottom:2rem;color:white;box-shadow:0 10px 30px rgba(0,0,0,0.1);">
+    <h1 style="font-family:'Poppins',sans-serif;font-size:1.8rem;font-weight:900;margin:0;">📅 Booking Portal</h1>
+    <p style="font-size:0.95rem;font-weight:600;margin-top:0.4rem;opacity:0.9;">Secure your visit at <strong>{{ hospital }}</strong></p>
+  </div>
+
+  <!-- Doctor Selection Chips -->
+  {% if doctors and doctors|length > 1 %}
+  <div style="margin-bottom:1.5rem;">
+    <p style="font-size:0.85rem;color:#1a237e;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:0.8rem;">Select Specialist:</p>
+    <div style="display:flex;gap:0.8rem;overflow-x:auto;padding-bottom:0.8rem;scrollbar-width:none;">
+        {% for d in doctors %}
+        <a href="?doctor_id={{ d.id }}&hospital={{ hospital }}" 
+           class="doctor-chip {% if d.id == doctor.id %}active{% endif %}"
+           style="border-radius:15px;padding:0.7rem 1.2rem;font-weight:700;">
+           👨‍⚕️ {{ d.name }}
+        </a>
+        {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Doctor Profile Card -->
+  <div class="card glass-card" style="margin-bottom:2rem;padding:1.5rem;border-radius:24px;border-top:8px solid #1565C0;">
+    <div class="doctor-profile" style="display:flex;gap:1.5rem;align-items:center;">
+      <div style="width:70px;height:70px;border-radius:50%;background:linear-gradient(135deg,#2E7D32,#1565C0);display:flex;align-items:center;justify-content:center;font-size:2.5rem;flex-shrink:0;box-shadow:0 8px 15px rgba(0,0,0,0.1); margin: 0 auto;">👨‍⚕️</div>
+      <div style="flex: 1;">
+        <h2 style="font-size:1.3rem;font-weight:900;color:#1a237e;margin:0;">{{ doctor.name }}</h2>
+        <p style="color:#5c6bc0;font-size:0.95rem;font-weight:600;">{{ doctor.specialization }} · {{ doctor.experience_years or 5 }} Years Experience</p>
+        <p style="color:#1565C0;font-weight:900;font-size:1.1rem;margin-top:0.3rem;">Fees: Rs {{ doctor.consultation_fee or 500 }}</p>
+      </div>
+    </div>
+  </div>
+
+  <form method="POST" action="/book">
+    <!-- Slot Selection Grid -->
+    <div class="card glass-card" style="margin-bottom:1.5rem;padding:1.5rem;border-radius:24px;">
+      <h3 style="font-size:1rem;font-weight:800;margin-bottom:1.2rem;color:#1a237e;text-transform:uppercase;">🕐 Choose Availability</h3>
+      <div id="slot-tabs" style="display:flex;gap:0.6rem;overflow-x:auto;margin-bottom:1.2rem;scrollbar-width:none;" class="custom-scroll">
+        {% set dates = slots | map(attribute='date') | unique | list %}
+        {% for d in dates %}
+        <button type="button" onclick="filterSlots('{{ d }}')" class="tab-btn {% if loop.first %}active{% endif %}"
+          style="white-space:nowrap;border-radius:12px;padding:0.6rem 1.2rem;font-weight:700; cursor: pointer;">{{ d }}</button>
+        {% endfor %}
+      </div>
+      <div id="slots-grid" class="slots-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.8rem;">
+        {% for slot in slots %}
+        <label class="slot-label {% if slot.is_booked %}slot-booked{% endif %}" data-date="{{ slot.date }}">
+          <input type="radio" name="slot_id" value="{{ slot.id }}" {% if slot.is_booked %}disabled{% endif %} required style="display:none;"/>
+          <div class="slot-btn" style="border-radius:12px;padding:0.8rem;font-weight:800; cursor: pointer;">{{ slot.time }}</div>
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Patient Info Form -->
+    <div class="card glass-card" style="margin-bottom:2rem;padding:1.5rem;border-radius:24px;">
+      <h3 style="font-size:1rem;font-weight:800;margin-bottom:1.2rem;color:#1a237e;text-transform:uppercase;">👤 Patient Registration</h3>
+      <div class="form-group"><label class="form-label">Full Name *</label><input type="text" name="patient_name" class="form-control" required placeholder="Legal Name" style="border-radius:12px;background:rgba(255,255,255,0.8);"/></div>
+      <div class="form-grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <div class="form-group"><label class="form-label">Contact Number *</label><input type="tel" name="phone" class="form-control" required placeholder="10-digit Mobile" style="border-radius:12px;background:rgba(255,255,255,0.8);"/></div>
+        <div class="form-group"><label class="form-label">Age</label><input type="number" name="age" class="form-control" placeholder="Years" min="1" max="120" style="border-radius:12px;background:rgba(255,255,255,0.8);"/></div>
+      </div>
+      <div class="form-group" style="margin-bottom:0;"><label class="form-label">Symptom Summary (Optional)</label><textarea name="note" class="form-control" rows="2" placeholder="Briefly describe your concern..." style="border-radius:12px;background:rgba(255,255,255,0.8);"></textarea></div>
+    </div>
+
+    <button type="submit" class="btn btn-primary btn-lg btn-full" style="padding:1.2rem;border-radius:18px;background:linear-gradient(135deg,#1565C0,#2E7D32);box-shadow:0 10px 25px rgba(0,0,0,0.15);font-weight:900;">
+        🚀 Secure Appointment
+    </button>
+  </form>
+{% else %}
+  <div style="text-align:center;padding:4rem 2rem;">
+    <div style="font-size:4rem;margin-bottom:1rem;">🔍</div>
+    <h3 style="font-weight:800;color:#1a237e;">Doctor unavailable</h3>
+    <p style="color:#757575;margin-bottom:1.5rem;">No specialists found for this hospital.</p>
+    <a href="/hospitals" class="btn btn-primary">Find Another Hospital</a>
+  </div>
+{% endif %}
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+.slot-label { cursor:pointer; }
+.slot-btn { padding:0.5rem;text-align:center;border:2px solid #e0e0e0;border-radius:8px;font-size:0.82rem;font-weight:600;transition:0.2s; }
+.slot-label input:checked + .slot-btn { border-color:#2E7D32;background:#E8F5E9;color:#2E7D32; }
+.slot-booked .slot-btn { background:#f5f5f5;color:#bdbdbd;cursor:not-allowed; }
+.slot-label.hidden { display:none; }
+.doctor-chip {
+    padding: 0.5rem 0.8rem;
+    border-radius: 20px;
+    background: #f5f5f5;
+    color: #555;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-decoration: none;
+    border: 1px solid #e0e0e0;
+    white-space: nowrap;
+    transition: 0.2s;
+}
+.doctor-chip.active {
+    background: #1565C0;
+    color: white;
+    border-color: #1565C0;
+}
+</style>
+<script>
+function filterSlots(date) {
+  document.querySelectorAll('.slot-label').forEach(s => {
+    s.classList.toggle('hidden', s.dataset.date !== date);
+  });
+  document.querySelectorAll('#slot-tabs .tab-btn').forEach(b => {
+    b.classList.toggle('active', b.textContent.trim() === date);
+  });
+}
+// Show only today's slots by default
+window.onload = () => {
+  const first = document.querySelector('#slot-tabs .tab-btn');
+  if(first) filterSlots(first.textContent.trim());
+};
+</script>
+{% endblock %}

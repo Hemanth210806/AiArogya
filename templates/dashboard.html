@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — ArogyaAI{% endblock %}
+
+{% block content %}
+<style>
+  .dashboard-header {
+    margin-bottom: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+  @media (max-width: 600px) {
+    .dashboard-header { flex-direction: column; align-items: flex-start; gap: 1rem; }
+    .dashboard-header h1 { font-size: 1.6rem !important; }
+    .kpi-grid { grid-template-columns: 1fr 1fr 1fr !important; gap: 8px !important; }
+    .action-grid { grid-template-columns: 1fr 1fr !important; gap: 12px !important; }
+    .dept-grid { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+    .action-card { padding: 1.2rem !important; min-height: 140px !important; }
+    .action-card h3 { font-size: 0.9rem !important; }
+    .action-card p { font-size: 0.7rem !important; display: none; } /* Hide description on mobile to save space */
+  }
+  
+  .kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 2rem; }
+  .action-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 2rem; }
+  .dept-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1rem; }
+</style>
+
+<div class="page fade-in">
+  <!-- Premium Greeting -->
+  <div class="dashboard-header">
+    <div>
+        <p style="color:#757575;font-size:0.95rem;font-weight:600;margin-bottom:0.2rem;">Namaste 👋</p>
+        <h1 style="font-family:'Poppins',sans-serif;font-size:2rem;font-weight:900;color:#1a237e;margin:0;letter-spacing:-0.5px;">
+          Hello, {{ name }}!
+        </h1>
+        <p style="color:#5c6bc0;font-size:0.9rem;font-weight:500;">Ready for your health check today?</p>
+    </div>
+    <div style="background:#e8eaf6;padding:0.6rem 1rem;border-radius:15px;display:flex;flex-direction:column;align-items:center; box-shadow: 0 4px 10px rgba(0,0,0,0.05); cursor:pointer;" onclick="window.location.href='/health-score'">
+        <span style="font-size:1rem;margin-bottom:2px;">📈</span><span style="font-size:0.7rem;font-weight:700;color:#3949ab;text-transform:uppercase;">Score</span>
+        <span style="font-size:1.2rem;font-weight:800;color:#1a237e;">{{ health_score }}%</span>
+    </div>
+  </div>
+
+  <!-- KPI Stats Grid -->
+  <div class="kpi-grid">
+    <div class="kpi-card" style="text-align: center; background: white; padding: 1rem; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.02);">
+        <div style="font-size: 1.5rem;">💧</div>
+        <div style="font-weight: 800; font-size: 1.1rem;">1.2L</div>
+        <div style="font-size: 0.7rem; color: #888;">Water</div>
+    </div>
+    <div class="kpi-card" style="text-align: center; background: white; padding: 1rem; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.02);">
+        <div style="font-size: 1.5rem;">😴</div>
+        <div style="font-weight: 800; font-size: 1.1rem;">7.5h</div>
+        <div style="font-size: 0.7rem; color: #888;">Sleep</div>
+    </div>
+    <div class="kpi-card" style="text-align: center; background: white; padding: 1rem; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.02);">
+        <div style="font-size: 1.5rem;">🔥</div>
+        <div style="font-weight: 800; font-size: 1.1rem;">420</div>
+        <div style="font-size: 0.7rem; color: #888;">Kcal</div>
+    </div>
+  </div>
+
+  <!-- Action Grid -->
+  <div class="action-grid">
+    <div class="action-card bg-green-grad" onclick="window.location.href='/symptoms'">
+        <div class="icon" style="font-size: 2rem;">🔍</div>
+        <h3 style="margin: 10px 0 5px;">AI Analysis</h3>
+        <p>Check symptoms with GPT-level medical AI</p>
+    </div>
+
+    <div class="action-card bg-blue-grad" onclick="window.location.href='/medicine'">
+        <div class="icon" style="font-size: 2rem;">⏰</div>
+        <h3 style="margin: 10px 0 5px;">Reminders</h3>
+        <p>Manage meds & chat with Med-Bot</p>
+    </div>
+
+    <div class="action-card bg-gold-grad" onclick="window.location.href='/history'">
+        <div class="icon" style="font-size: 2rem;">⏳</div>
+        <h3 style="margin: 10px 0 5px;">History</h3>
+        <p>View past analyses & recurring patterns</p>
+    </div>
+
+    <div class="action-card bg-blue-grad" style="background: linear-gradient(135deg, #1e3c72, #2a5298);" onclick="window.location.href='/prescriptions'">
+        <div class="icon" style="font-size: 2rem;">💊</div>
+        <h3 style="margin: 10px 0 5px;">Prescriptions</h3>
+        <p>Your digital medical wallet</p>
+    </div>
+
+    <div class="action-card bg-red-grad" onclick="triggerSOS(event)">
+        <div class="icon" style="font-size: 2rem; animation:pulse-soft 2s infinite;">🚨</div>
+        <h3 style="margin: 10px 0 5px;">Emergency</h3>
+        <p>Instant SOS & Ambulance alert</p>
+    </div>
+
+    <div class="action-card bg-green-grad" style="background: linear-gradient(135deg, #00b09b, #96c93d);" onclick="window.location.href='/my-appointments'">
+        <div class="icon" style="font-size: 2rem;">📅</div>
+        <h3 style="margin: 10px 0 5px;">Appointments</h3>
+        <p>Manage your doctor visits</p>
+    </div>
+  </div>
+
+  <!-- 🏥 Specialized Departments -->
+  <h2 style="font-size:1.2rem;font-weight:900;color:#1a237e;margin-bottom:1.2rem;">🏥 Our Specialized Departments</h2>
+  <div class="dept-grid">
+    {% set departments = [
+        {'n': 'General Medicine', 'i': '🩺', 'd': 'Fever, infections'},
+        {'n': 'Cardiology', 'i': '❤️', 'd': 'Heart & BP'},
+        {'n': 'Gastroenterology', 'i': '🫃', 'd': 'Digestive issues'},
+        {'n': 'Neurology', 'i': '🧠', 'd': 'Brain & nerves'},
+        {'n': 'Pulmonology', 'i': '🫁', 'd': 'Lungs & breathing'},
+        {'n': 'Dermatology', 'i': '🧴', 'd': 'Skin & hair'},
+        {'n': 'Orthopedics', 'i': '🦴', 'd': 'Bones & joints'},
+        {'n': 'Endocrinology', 'i': '⚗️', 'd': 'Hormones & Sugar'},
+        {'n': 'Nephrology', 'i': '🫘', 'd': 'Kidney & Urinary'},
+        {'n': 'Ophthalmology', 'i': '👁️', 'd': 'Eye & vision'},
+        {'n': 'ENT', 'i': '👂', 'd': 'Ear, nose, throat'},
+        {'n': 'Psychiatry', 'i': '🧘', 'd': 'Mental health'},
+        {'n': 'Pediatrics', 'i': '👶', 'd': 'Child health'},
+        {'n': 'Gynecology', 'i': '🌸', 'd': 'Women\'s health'},
+        {'n': 'Oncology', 'i': '🎗️', 'd': 'Cancer care'}
+    ] %}
+    {% for dept in departments %}
+    <a href="/appointment?dept={{ dept.n }}" style="text-decoration:none;color:inherit;">
+        <div class="card glass-card h-full" style="padding:1rem;text-align:center;border-bottom:4px solid #3f51b5;transition:0.3s transform;">
+            <div style="font-size:2rem;margin-bottom:0.5rem;">{{ dept.i }}</div>
+            <h4 style="font-size:0.85rem;font-weight:800;color:#1a237e;margin-bottom:0.2rem;">{{ dept.n }}</h4>
+            <p style="font-size:0.7rem;color:#757575;">{{ dept.d }}</p>
+        </div>
+    </a>
+    {% endfor %}
+  </div>
+
+  <!-- 💡 Dynamic Health Tip Card -->
+  <div class="card glass-card" style="margin-top: 2rem; padding: 1.5rem; border-left: 6px solid #FFD54F; border-radius: 20px;">
+    <div style="display: flex; gap: 1rem; align-items: center;">
+        <span style="font-size: 2rem;">💡</span>
+        <div>
+            <h4 style="font-size: 0.9rem; font-weight: 800; color: #1a237e; margin: 0; text-transform: uppercase;">Daily Wellness Tip</h4>
+            <p id="health-tip" style="font-size: 0.9rem; color: #424242; margin-top: 0.3rem; font-weight: 600; line-height: 1.4;"></p>
+        </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const tips = [
+  "Drink at least 8 glasses of water daily to stay hydrated.",
+  "Walk 30 minutes daily — it reduces heart disease risk by 35%.",
+  "Get 7-8 hours of sleep. It boosts your immune system.",
+  "Eat 5 portions of fruits and vegetables every day.",
+  "Manage stress with deep breathing — 5 mins a day helps.",
+  "Wash hands before eating to prevent 80% of common infections.",
+  "Avoid smoking — it's the leading cause of preventable death.",
+  "Check your blood pressure regularly, especially after age 40.",
+];
+document.getElementById('health-tip').textContent = tips[Math.floor(Math.random()*tips.length)];
+</script>
+{% endblock %}

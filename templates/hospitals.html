@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+{% block title %}Hospital Locator — ArogyaAI{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+{% endblock %}
+
+{% block content %}
+<style>
+  @media (max-width: 600px) {
+    .hospital-header { flex-direction: column !important; align-items: flex-start !important; gap: 1rem; padding: 1.5rem !important; }
+    .hospital-header h1 { font-size: 1.5rem !important; }
+    .search-container { flex-direction: column; padding: 1rem !important; }
+    .search-container input { font-size: 0.9rem !important; margin-bottom: 10px; border-bottom: 1px solid #ddd !important; }
+    .search-container button { width: 100%; padding: 0.8rem !important; }
+    #map { height: 200px !important; }
+    .hospital-card { padding: 1rem !important; }
+    .hospital-card h3 { font-size: 0.85rem !important; }
+    .hospital-actions { flex-direction: row !important; width: 100%; justify-content: space-between; margin-top: 10px; }
+  }
+</style>
+
+<div class="page-wide fade-in">
+  <!-- Premium Header -->
+  <div class="hospital-header" style="background:linear-gradient(135deg,#1E88E5,#1565C0);padding:2rem;border-radius:24px;margin-bottom:2rem;color:white;box-shadow:0 10px 30px rgba(0,0,0,0.1);display:flex;justify-content:space-between;align-items:center;">
+    <div>
+        <h1 style="font-family:'Poppins',sans-serif;font-size:1.8rem;font-weight:900;margin:0;">🗺️ Care Centers</h1>
+        <p style="font-size:0.95rem;font-weight:600;margin-top:0.4rem;opacity:0.9;">Specialized care for <strong>{{ department }}</strong></p>
+    </div>
+    <button onclick="getCurrentLocation()" class="btn btn-primary" style="background:#fff;color:#1565C0;border-radius:15px;padding:0.7rem 1.2rem; font-weight: 700;">
+        📍 Current Location
+    </button>
+  </div>
+
+  {% if not demo_maps %}
+  <!-- Modern Search -->
+  <div class="search-container" style="display:flex;gap:0.8rem;margin-bottom:1.5rem;background:rgba(255,255,255,0.8);backdrop-filter:blur(10px);padding:0.8rem;border-radius:20px;border:1px solid rgba(0,0,0,0.05);box-shadow:0 8px 25px rgba(0,0,0,0.03);">
+    <input type="text" id="location-input" placeholder="Enter city (e.g. Mysore, Bangalore)" class="form-control" style="flex:1;border:none;background:transparent;font-weight:600;font-size:0.95rem;">
+    <button onclick="searchByLocation()" class="btn btn-primary" style="padding:0 1.5rem;border-radius:15px;background:linear-gradient(135deg,#1565C0,#1E88E5); font-weight: 700;">
+        🔍 Search
+    </button>
+  </div>
+
+  <div id="map" style="height:280px;border-radius:24px;margin-bottom:1.5rem;z-index:1;border:none;box-shadow:0 15px 40px rgba(0,0,0,0.1);overflow:hidden;"></div>
+  
+  <div id="map-loading" style="text-align:center;padding:1.5rem;color:#1565C0;font-size:0.9rem;font-weight:700;display:none;background:rgba(21, 101, 192, 0.05);border-radius:15px;margin-bottom:1.5rem;">
+    📍 Locating top facilities...
+  </div>
+  {% endif %}
+
+  <div id="hospital-list">
+    <!-- Hospitals will be loaded here via JS -->
+  </div>
+
+  <div style="margin-top:2rem;background:linear-gradient(135deg,#E3F2FD,#BBDEFB);padding:1.8rem;border-radius:24px;text-align:center;border:1px solid rgba(21, 101, 192, 0.1);">
+    <h3 style="font-size:1.1rem;color:#1565C0;font-weight:800;margin-bottom:0.5rem;">Need a Virtual Consultation?</h3>
+    <p style="font-size:0.9rem;color:#5c6bc0;margin-bottom:1.2rem;font-weight:500;">Speak with an Arogya AI-certified specialist immediately.</p>
+    <a href="/appointment" class="btn btn-primary btn-full" style="padding:1rem;background:linear-gradient(135deg,#1565C0,#1E88E5);border:none;box-shadow:0 8px 20px rgba(21,101,192,0.25);">
+        📅 Book Appointment Now
+    </a>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+{% if not demo_maps %}
+<script>
+let map, userLat, userLng;
+const dept = "{{ department }}";
+const apiKey = "{{ maps_key }}";
+
+// MYSORE DEFAULTS (Mahaveer Medicals, SJH Road, Mysore)
+const MYSORE_LAT = 12.2757;
+const MYSORE_LNG = 76.6454;
+
+document.addEventListener('DOMContentLoaded', () => {
+    initMap(MYSORE_LAT, MYSORE_LNG);
+    // Automatic geolocation disabled for stability. User can click "My Location" button.
+});
+
+function initMap(lat, lng) {
+    if (!lat || !lng) return;
+    userLat = parseFloat(lat);
+    userLng = parseFloat(lng);
+    
+    if (map) map.remove();
+    map = L.map('map').setView([userLat, userLng], 14);
+    
+    L.tileLayer(`https://maps.geoapify.com/v1/tile/osm-bright/{z}/{x}/{y}.png?apiKey=${apiKey}`, {
+        attribution: '© OpenStreetMap contributors',
+        maxZoom: 20
+    }).addTo(map);
+
+    L.marker([userLat, userLng]).addTo(map).bindPopup('<b>Search Center</b>').openPopup();
+    
+    fetchHospitals(userLat, userLng);
+}
+
+function getCurrentLocation() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(pos => {
+            initMap(pos.coords.latitude, pos.coords.longitude);
+        }, err => {
+            console.warn("Geolocation denied. Using default Mysore center.");
+        });
+    }
+}
+
+function searchByLocation() {
+    const query = document.getElementById('location-input').value;
+    if (!query) return;
+    
+    document.getElementById('map-loading').style.display = 'block';
+    document.getElementById('map-loading').textContent = `🔍 Searching for ${query}...`;
+    
+    fetch(`https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(query)}&apiKey=${apiKey}`)
+        .then(r => r.json())
+        .then(data => {
+            if (data.features && data.features.length > 0) {
+                const [lon, lat] = data.features[0].geometry.coordinates;
+                initMap(lat, lon);
+            } else {
+                alert("Location not found.");
+                document.getElementById('map-loading').style.display = 'none';
+            }
+        });
+}
+
+function fetchHospitals(lat, lng) {
+    const list = document.getElementById('hospital-list');
+    list.innerHTML = '<p style="text-align:center;padding:1rem;">⏳ Finding nearby hospitals...</p>';
+    
+    // Simplified categories to ensure success across different API keys
+    const url = `https://api.geoapify.com/v2/places?categories=healthcare.hospital&filter=circle:${lng},${lat},15000&bias=proximity:${lng},${lat}&limit=20&apiKey=${apiKey}`;
+    
+    console.log("Fetching hospitals from:", url);
+    
+    fetch(url)
+        .then(r => {
+            if (!r.ok) throw new Error("API Response Error: " + r.status);
+            return r.json();
+        })
+        .then(data => {
+            document.getElementById('map-loading').style.display = 'none';
+            list.innerHTML = '';
+            
+            if (!data.features || data.features.length === 0) {
+                list.innerHTML = '<p style="text-align:center;color:#757575;padding:1rem;">No results in this area. Try searching for Mysore or Bangalore.</p>';
+                return;
+            }
+            
+            data.features.forEach(f => {
+                const p = f.properties;
+                const hLat = p.lat, hLon = p.lon;
+                const name = p.name || p.address_line1 || "Medical Center";
+                const dist = (p.distance / 1000).toFixed(1);
+                
+                L.marker([hLat, hLon]).addTo(map).bindPopup(name);
+
+                list.innerHTML += `
+                    <div class="card" style="margin-bottom:1rem;">
+                        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:0.5rem;">
+                            <div style="flex:1;">
+                                <h3 style="font-size:0.95rem;font-weight:700;">${name}</h3>
+                                <p style="color:#757575;font-size:0.8rem;">📍 ${dist} km away</p>
+                                <div style="display:flex;gap:0.3rem;margin-top:0.3rem;">
+                                    <span class="badge badge-info" style="font-size:0.7rem;">${dept}</span>
+                                </div>
+                            </div>
+                            <div style="display:flex;flex-direction:column;gap:0.4rem;">
+                                <a href="/appointment?hospital=${encodeURIComponent(name)}" class="btn btn-primary btn-sm" style="padding:0.3rem 0.6rem;font-size:0.8rem;">📅 Book</a>
+                                <a href="https://www.google.com/maps/dir/?api=1&destination=${hLat},${hLon}" target="_blank" class="btn btn-outline btn-sm" style="padding:0.3rem 0.6rem;font-size:0.8rem;">🧭 Route</a>
+                            </div>
+                        </div>
+                    </div>`;
+            });
+        })
+        .catch(err => {
+            console.error("Map Error:", err);
+            list.innerHTML = `<div style="text-align:center;padding:1rem;color:#C62828;background:#FFEBEE;border-radius:8px;">
+                <p>⚠️ Map data service issue: ${err.message || 'Service Unavailable'}</p>
+                <p style="font-size:0.8rem;">Check your API key in config.py or search for "Mysore" manually.</p>
+            </div>`;
+        });
+}
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+{% block title %}Health Score — ArogyaAI{% endblock %}
+
+{% block content %}
+<style>
+  @media (max-width: 600px) {
+    .score-banner { padding: 2rem 1rem !important; border-radius: 25px !important; }
+    .score-banner h1 { font-size: 3rem !important; }
+    .score-banner .label { font-size: 1.1rem !important; }
+    .glass-card { padding: 1.2rem !important; border-radius: 20px !important; }
+    .opt-btn { padding: 0.8rem !important; font-size: 0.85rem !important; }
+    .form-grid-2 { grid-template-columns: 1fr !important; gap: 10px; }
+  }
+</style>
+
+<div class="page fade-in">
+  <div style="margin-bottom:1.2rem;">
+    <h1 class="section-title" style="font-weight: 900; color: #1a237e;">❤️ Health Score</h1>
+    <p class="section-subtitle" style="font-weight: 600; color: #5c6bc0;">Personalized Wellness Analysis</p>
+  </div>
+
+  {% if result %}
+  <!-- Premium Result Screen -->
+  {% set color_grad = 'linear-gradient(135deg, #1D976C, #93F9B9)' if score >= 80 else 'linear-gradient(135deg, #f2994a, #f2c94c)' if score >= 60 else 'linear-gradient(135deg, #FF512F, #DD2476)' %}
+  {% set label = 'Excellent' if score >= 80 else 'Good' if score >= 60 else 'Average' if score >= 40 else 'Poor' %}
+  {% set emoji = '🚀' if score >= 80 else '✨' if score >= 60 else '⚖️' if score >= 40 else '🆘' %}
+
+  <div class="score-banner" style="background:{{ color_grad }};border-radius:30px;color:#fff;text-align:center;padding:3rem 1.5rem;margin-bottom:2rem;box-shadow:0 15px 35px rgba(0,0,0,0.15);position:relative;overflow:hidden;">
+    <div style="position:absolute;top:-20px;right:-20px;font-size:10rem;opacity:0.1;">❤️</div>
+    <div style="font-size:4rem;margin-bottom:0.5rem;animation:pulse-soft 2s infinite;">{{ emoji }}</div>
+    <div style="font-size:4.5rem;font-weight:900;font-family:'Poppins',sans-serif;letter-spacing:-2px;">{{ score }}<span style="font-size:1.5rem;opacity:0.8;">/100</span></div>
+    <div class="label" style="font-size:1.4rem;font-weight:800;margin-top:0.2rem;text-transform:uppercase;letter-spacing:1px;">{{ label }} Status</div>
+  </div>
+
+    <!-- Personalized Tips -->
+  <div class="card glass-card" style="margin-bottom:1.5rem;padding:2rem;border-radius:24px;">
+    <h3 style="font-size:1.1rem;font-weight:800;margin-bottom:1.2rem;color:#1a237e;display:flex;align-items:center;gap:0.5rem;">
+        <span style="background:#E3F2FD;padding:0.4rem;border-radius:10px;">💡</span> AI Health & Lifestyle Recommendations
+    </h3>
+    <div style="display:flex;flex-direction:column;gap:1.2rem;">
+        <!-- Medical Context -->
+        {% if answers.allergies %}
+            <div style="background:#FFF9C4; padding:0.8rem; border-radius:12px; border-left:4px solid #FBC02D;">
+                <p style="margin:0; font-size:0.95rem; color:#616161;">🤧 <strong>Allergy Caution</strong>: Be mindful of <b>{{ answers.allergies }}</b>. Always carry your emergency medication.</p>
+            </div>
+        {% endif %}
+        
+        {% if answers.chronic_conditions %}
+            <div style="background:#E1F5FE; padding:0.8rem; border-radius:12px; border-left:4px solid #03A9F4;">
+                <p style="margin:0; font-size:0.95rem; color:#616161;">💊 <strong>Condition Management</strong>: Regular monitoring for <b>{{ answers.chronic_conditions }}</b> is essential. Stay consistent with your doctor's advice.</p>
+            </div>
+        {% endif %}
+
+        {% if answers.past_surgeries %}
+            <div style="background:#F5F5F5; padding:0.8rem; border-radius:12px; border-left:4px solid #9E9E9E;">
+                <p style="margin:0; font-size:0.95rem; color:#616161;">🏥 <strong>Recovery Check</strong>: Keep tracking your health status following your <b>{{ answers.past_surgeries }}</b> surgery.</p>
+            </div>
+        {% endif %}
+
+        <!-- Lifestyle Tips -->
+        {% if answers.smoke == 'yes' %}<p style="font-size:0.95rem;color:#424242;line-height:1.5;margin:0;">🚭 <strong>Quit smoking</strong>: Your heart rate and blood pressure drop just 20 minutes after quitting.</p>{% endif %}
+        {% if answers.exercise == 'no' %}<p style="font-size:0.95rem;color:#424242;line-height:1.5;margin:0;">🏃 <strong>Start exercising</strong>: Just 30 mins of brisk walking daily significantly boosts heart health.</p>{% endif %}
+        {% if answers.sleep == 'no' %}<p style="font-size:0.95rem;color:#424242;line-height:1.5;margin:0;">😴 <strong>Sleep Hygiene</strong>: Quality sleep is the foundation of mental and physical recovery.</p>{% endif %}
+        {% if answers.water == 'no' %}<p style="font-size:0.95rem;color:#424242;line-height:1.5;margin:0;">💧 <strong>Hydration</strong>: 70% of your body is water. Drinking enough boosts your energy levels.</p>{% endif %}
+        {% if answers.vegetables == 'no' %}<p style="font-size:0.95rem;color:#424242;line-height:1.5;margin:0;">🥦 <strong>Balanced Diet</strong>: Add more colorful vegetables to your plate for vital micronutrients.</p>{% endif %}
+        
+        {% if score >= 90 %}
+            <p style="font-size:1rem;color:#2E7D32;font-weight:700;margin:0;">🌟 <strong>Perfect Score!</strong> Maintain your current routine to stay in peak health.</p>
+        {% elif score >= 80 %}
+            <p style="font-size:1rem;color:#2E7D32;font-weight:700;margin:0;">✅ <strong>Excellent Work!</strong> You are maintaining a very healthy lifestyle.</p>
+        {% elif score >= 60 %}
+            <p style="font-size:1rem;color:#F9A825;font-weight:700;margin:0;">⚠️ <strong>Room for Improvement</strong>: Follow the tips above to reach the next health tier.</p>
+        {% else %}
+            <p style="font-size:1rem;color:#C62828;font-weight:700;margin:0;">🆘 <strong>Action Required</strong>: Please prioritize the recommendations above to improve your wellness.</p>
+        {% endif %}
+    </div>
+  </div>
+
+  <!-- History Visualization -->
+  {% if history and history|length > 1 %}
+  <div class="card glass-card" style="margin-bottom:2rem;padding:1.5rem;border-radius:24px;">
+    <h3 style="font-size:1rem;font-weight:800;margin-bottom:1.5rem;color:#1a237e;">📈 Performance Journey</h3>
+    <div id="score-chart" style="height:150px;display:flex;align-items:flex-end;gap:0.8rem;padding:0 0.5rem;">
+      {% for h in history %}
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:0.5rem;">
+        <span style="font-size:0.75rem;font-weight:800;color:{{ '#2E7D32' if h.score >= 80 else '#F9A825' if h.score >= 60 else '#C62828' }};">{{ h.score }}</span>
+        <div style="width:100%;max-width:35px;background:linear-gradient(180deg,#1565C0,#2E7D32);border-radius:10px 10px 4px 4px;height:{{ (h.score/100*120)|int }}px;min-height:8px;box-shadow:0 4px 10px rgba(21,101,192,0.2);"></div>
+        <span style="font-size:0.65rem;font-weight:700;color:#9e9e9e;white-space:nowrap;">{{ h.date }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <div style="display:flex;flex-direction:column;gap:0.8rem;">
+    <a href="/health-score" class="btn btn-outline btn-full" style="padding:1rem;">🔄 Retake Analysis</a>
+    <a href="/dashboard" class="btn btn-primary btn-full" style="padding:1.1rem;background:linear-gradient(135deg,#1565C0,#2E7D32);border:none;">🏠 Return to Dashboard</a>
+  </div>
+
+  {% else %}
+    <!-- Quiz Form -->
+  <form method="POST" action="/health-score">
+    <div class="card" style="margin-bottom:1.5rem; padding:2rem; border-radius:28px; box-shadow:0 10px 30px rgba(0,0,0,0.05);">
+      
+      <!-- Section 1: Medical Profile -->
+      <h3 style="font-size:1.1rem; font-weight:800; color:#1a237e; margin-bottom:1.5rem; display:flex; align-items:center; gap:0.5rem;">
+        <span style="background:#E1F5FE; padding:0.4rem; border-radius:10px;">🏥</span> Medical History
+      </h3>
+
+      <div class="form-group" style="margin-bottom:1.2rem;">
+        <label class="form-label" style="font-weight:700; color:#333; margin-bottom:0.5rem; display:block;">🤧 Any Allergies?</label>
+        <input type="text" name="allergies" class="form-control" placeholder="Food, drug, or seasonal allergies..." style="border-radius:12px; background:rgba(0,0,0,0.02);">
+      </div>
+
+      <div class="form-group" style="margin-bottom:1.2rem;">
+        <label class="form-label" style="font-weight:700; color:#333; margin-bottom:0.5rem; display:block;">💊 Chronic Conditions?</label>
+        <input type="text" name="chronic_conditions" class="form-control" placeholder="BP, Diabetes, Thyroid, etc." style="border-radius:12px; background:rgba(0,0,0,0.02);">
+      </div>
+
+      <div class="form-group" style="margin-bottom:2rem;">
+        <label class="form-label" style="font-weight:700; color:#333; margin-bottom:0.5rem; display:block;">🔪 Past Surgeries?</label>
+        <input type="text" name="past_surgeries" class="form-control" placeholder="Any major operations..." style="border-radius:12px; background:rgba(0,0,0,0.02);">
+      </div>
+
+      <!-- Section 2: Lifestyle Habits -->
+      <h3 style="font-size:1.1rem; font-weight:800; color:#1a237e; margin-top:2.5rem; margin-bottom:1.5rem; display:flex; align-items:center; gap:0.5rem; border-top:1px solid #eee; padding-top:2rem;">
+        <span style="background:#E8F5E9; padding:0.4rem; border-radius:10px;">🏃</span> Lifestyle Habits
+      </h3>
+
+      <div style="margin-bottom:1.2rem;padding-bottom:1rem;border-bottom:1px solid #f5f5f5;">
+        <p style="font-weight:600;margin-bottom:0.6rem;">🚬 Do you smoke?</p>
+        <div style="display:flex;gap:0.5rem;">
+          <label style="flex:1;cursor:pointer;"><input type="radio" name="smoke" value="no" checked style="display:none;"/> <div class="opt-btn">No ✅</div></label>
+          <label style="flex:1;cursor:pointer;"><input type="radio" name="smoke" value="yes" style="display:none;"/> <div class="opt-btn">Yes ❌</div></label>
+        </div>
+      </div>
+
+      <div style="margin-bottom:1.2rem;padding-bottom:1rem;border-bottom:1px solid #f5f5f5;">
+        <p style="font-weight:600;margin-bottom:0.6rem;">🏃 Exercise 30 mins daily?</p>
+        <div style="display:flex;gap:0.5rem;">
+          <label style="flex:1;cursor:pointer;"><input type="radio" name="exercise" value="yes" checked style="display:none;"/> <div class="opt-btn">Yes ✅</div></label>
+          <label style="flex:1;cursor:pointer;"><input type="radio" name="exercise" value="no" style="display:none;"/> <div class="opt-btn">No ❌</div></label>
+        </div>
+      </div>
+
+      <div style="margin-bottom:1.2rem;padding-bottom:1rem;border-bottom:1px solid #f5f5f5;">
+        <p style="font-weight:600;margin-bottom:0.6rem;">😴 Sleep 7-8 hours daily?</p>
+        <div style="display:flex;gap:0.5rem;">
+          <label style="flex:1;cursor:pointer;"><input type="radio" name="sleep" value="yes" checked style="display:none;"/> <div class="opt-btn">Yes ✅</div></label>
+          <label style="flex:1;cursor:pointer;"><input type="radio" name="sleep" value="no" style="display:none;"/> <div class="opt-btn">No ❌</div></label>
+        </div>
+      </div>
+
+      <div style="margin-bottom:1.2rem;padding-bottom:1rem;border-bottom:1px solid #f5f5f5;">
+        <p style="font-weight:600;margin-bottom:0.6rem;">💧 Drink 2+ litres water daily?</p>
+        <div style="display:flex;gap:0.5rem;">
+          <label style="flex:1;cursor:pointer;"><input type="radio" name="water" value="yes" checked style="display:none;"/> <div class="opt-btn">Yes ✅</div></label>
+          <label style="flex:1;cursor:pointer;"><input type="radio" name="water" value="no" style="display:none;"/> <div class="opt-btn">No ❌</div></label>
+        </div>
+      </div>
+
+      <div style="margin-bottom:1.2rem;padding-bottom:1rem;border-bottom:1px solid #f5f5f5;">
+        <p style="font-weight:600;margin-bottom:0.6rem;">🥦 Eat vegetables daily?</p>
+        <div style="display:flex;gap:0.5rem;">
+          <label style="flex:1;cursor:pointer;"><input type="radio" name="vegetables" value="yes" checked style="display:none;"/> <div class="opt-btn">Yes ✅</div></label>
+          <label style="flex:1;cursor:pointer;"><input type="radio" name="vegetables" value="no" style="display:none;"/> <div class="opt-btn">No ❌</div></label>
+        </div>
+      </div>
+
+      <div style="margin-bottom:1.5rem;">
+        <p style="font-weight:600;margin-bottom:0.4rem;">😰 Stress level: <span id="stress-val">5</span>/10</p>
+        <input type="range" name="stress" id="stress-slider" min="1" max="10" value="5" style="width:100%;accent-color:#2E7D32;" oninput="document.getElementById('stress-val').textContent=this.value"/>
+      </div>
+
+      <div class="form-grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top:1.5rem;">
+        <div class="form-group"><label class="form-label">Age</label><input type="number" name="age" class="form-control" placeholder="Age" style="border-radius:12px;"></div>
+        <div class="form-group"><label class="form-label">Weight (kg)</label><input type="number" name="weight" class="form-control" placeholder="Weight" style="border-radius:12px;"></div>
+      </div>
+    </div>
+    <button type="submit" class="btn btn-primary btn-lg btn-full" style="padding: 1.2rem; border-radius: 20px; background: linear-gradient(135deg, #1565C0, #2E7D32); font-weight: 900; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">🚀 Generate My Full Health Report</button>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+.opt-btn {
+  text-align:center;padding:0.6rem;border:2px solid #e0e0e0;border-radius:10px;
+  font-weight:600;font-size:0.9rem;transition:0.2s;background:#fff;
+}
+input[type=radio]:checked + .opt-btn {
+  border-color:#2E7D32;background:#E8F5E9;color:#2E7D32;
+}
+</style>
+{% endblock %}

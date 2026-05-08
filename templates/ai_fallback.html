@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Health Advice — ArogyaAI{% endblock %}
+
+{% block content %}
+<div class="page fade-in">
+    <div style="margin-bottom:1.5rem; text-align:center;">
+        <h1 class="section-title" style="font-weight: 900; color: #1a237e;">🤖 AI Health Advisor</h1>
+        <p class="section-subtitle" style="font-weight: 600; color: #5c6bc0;">Our diagnostic model is uncertain, but here is some guidance.</p>
+    </div>
+
+    <!-- User's Original Text -->
+    <div class="card glass-card" style="margin-bottom:1.2rem; background: rgba(255, 255, 255, 0.4);">
+        <p style="font-size:0.8rem; color:#5c6bc0; font-weight:700; text-transform:uppercase; margin-bottom:0.5rem;">Your Description</p>
+        <p style="font-style: italic; color: #333;">"{{ text }}"</p>
+    </div>
+
+    <!-- AI Advice -->
+    <div class="card glass-card" style="margin-bottom:1.5rem; padding:2rem; border-radius:24px; border-left:8px solid #3f51b5; background: white;">
+        <h2 style="font-size:1.1rem; font-weight:800; margin-bottom:1rem; color:#1a237e;">💡 Advisor Insight</h2>
+        <p style="font-size:1rem; color:#424242; line-height:1.6; font-weight:500;">
+            {{ advice }}
+        </p>
+    </div>
+
+    <!-- Warning -->
+    <div class="card" style="background: #fff3e0; border: 1px solid #ffe0b2; margin-bottom:2rem;">
+        <p style="font-size:0.85rem; color:#e65100; margin:0; font-weight:600;">
+            ⚠️ Note: This is an AI-generated advisor response because your symptoms were not specific enough for our clinical model. This is not a diagnosis.
+        </p>
+    </div>
+
+    <!-- CTA -->
+    <div style="display: flex; flex-direction: column; gap: 0.8rem;">
+        <a href="/symptoms" class="btn btn-primary btn-lg btn-full">
+            🔄 Try Describing Differently
+        </a>
+        <a href="/dashboard" class="btn btn-outline btn-full">
+            🏠 Back to Dashboard
+        </a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,282 @@
+{% extends "base.html" %}
+{% block title %}Emergency Access — ArogyaAI{% endblock %}
+
+{% block content %}
+<style>
+  @media (max-width: 600px) {
+    .emergency-container { padding: 1rem !important; min-height: auto !important; }
+    .emergency-header h1 { font-size: 1.5rem !important; }
+    .role-btn { padding: 1.2rem !important; font-size: 1rem !important; }
+    .medical-card { padding: 1.2rem !important; }
+    .medical-val { font-size: 1.1rem !important; }
+  }
+</style>
+
+<div class="page-container fade-in emergency-container" style="max-width: 500px; margin: 0 auto; padding: 2rem; min-height: 80vh; display: flex; flex-direction: column; justify-content: center;">
+    
+    <!-- HEADER -->
+    <div class="emergency-header" style="text-align: center; margin-bottom: 2.5rem;">
+        <div style="background: #ef5350; color: white; padding: 10px 24px; border-radius: 50px; display: inline-block; font-weight: 900; font-size: 0.9rem; letter-spacing: 1.5px; box-shadow: 0 4px 15px rgba(239,83,80,0.4); margin-bottom: 1.5rem; animation: pulse 2s infinite;">
+            🆘 EMERGENCY DATA
+        </div>
+        <h1 style="font-size: 1.8rem; color: #1a237e; margin-bottom: 0.5rem; font-weight: 900;">Arogya ID</h1>
+        <div style="font-family: 'Courier New', monospace; font-weight: 800; color: #1565C0; font-size: 1.4rem; background: rgba(21, 101, 192, 0.08); padding: 10px 20px; border-radius: 12px; display: inline-block; border: 1px solid rgba(21, 101, 192, 0.2);">
+            {{ profile.arogya_id }}
+        </div>
+        <div style="margin-top: 15px;">
+            <a href="javascript:void(0)" onclick="resetView()" style="font-size: 0.8rem; color: #1565C0; text-decoration: none; font-weight: 700;">[🔄 Reset Access]</a>
+        </div>
+    </div>
+
+    <!-- 1. ROLE CHOOSER -->
+    <div id="role-chooser" class="card glass-card" style="padding: 2.5rem 1.5rem; border-radius: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.15);">
+        <h2 style="text-align: center; font-size: 1.2rem; margin-bottom: 2rem; color: #333; font-weight: 800;">Who is helping?</h2>
+        
+        <div style="display: flex; flex-direction: column; gap: 15px;">
+            <button onclick="showHelper()" class="role-btn" style="background: linear-gradient(135deg, #43a047, #2e7d32); color: white; border: none; padding: 1.5rem; border-radius: 20px; font-weight: 800; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 12px; box-shadow: 0 8px 20px rgba(46,125,50,0.3); border: 2px solid rgba(255,255,255,0.2);">
+                <span style="font-size: 1.8rem;">🙋</span> Bystander / Helper
+            </button>
+            
+            <button onclick="showDoctor()" class="role-btn" style="background: linear-gradient(135deg, #1e88e5, #1565c0); color: white; border: none; padding: 1.5rem; border-radius: 20px; font-weight: 800; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 12px; box-shadow: 0 8px 20px rgba(21, 101, 192, 0.3); border: 2px solid rgba(255,255,255,0.2);">
+                <span style="font-size: 1.8rem;">🩺</span> Doctor / Paramedic
+            </button>
+        </div>
+        
+        <div style="margin-top: 2rem; text-align: center;">
+            <a href="tel:108" style="color: #d32f2f; font-weight: 800; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                🚑 Call 108 Ambulance
+            </a>
+        </div>
+    </div>
+
+    <!-- 2. HELPER VIEW -->
+    <div id="view-helper" class="card glass-card" style="padding: 2rem; display: none; border-radius: 30px; border-top: 6px solid #43a047;">
+        <h2 style="text-align: center; font-size: 1.3rem; color: #2e7d32; margin-bottom: 1.5rem;">Helper Dashboard</h2>
+        
+        <div style="background: rgba(67, 160, 71, 0.08); padding: 1.5rem; border-radius: 20px; margin-bottom: 2rem; border: 1px solid rgba(67, 160, 71, 0.15);">
+            <div style="margin-bottom: 12px;"><span style="color: #666; font-size: 0.9rem;">Patient</span><br><b style="font-size: 1.2rem;">{{ profile.full_name.split(' ')[0] }}</b></div>
+            <div style="margin-bottom: 12px;"><span style="color: #666; font-size: 0.9rem;">Blood Group</span><br><b style="color: #d32f2f; font-size: 1.4rem;">{{ profile.blood_group }}</b></div>
+            <div><span style="color: #666; font-size: 0.9rem;">Major Allergies</span><br><b>{{ profile.allergies or 'None reported' }}</b></div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+            <a href="tel:{{ profile.emergency_contact1_phone }}" style="background: #1565C0; color: white; text-decoration: none; padding: 1.2rem; border-radius: 18px; text-align: center; font-weight: 700; font-size: 1.1rem; box-shadow: 0 4px 12px rgba(21,101,192,0.3);">
+                📞 Call Emergency Contact
+            </a>
+            
+            <button onclick="shareHelperLocation()" style="background: #25D366; color: white; border: none; padding: 1.2rem; border-radius: 18px; font-weight: 700; font-size: 1.1rem; cursor: pointer; box-shadow: 0 4px 12px rgba(37,211,102,0.3);">
+                📍 Share GPS Spot (WhatsApp)
+            </button>
+        </div>
+
+        <button onclick="location.reload()" style="background: none; border: none; color: #888; text-decoration: underline; width: 100%; margin-top: 1.5rem; cursor: pointer; font-size: 0.9rem;">← Go Back</button>
+    </div>
+
+    <!-- 3. DOCTOR ALERTING SCREEN -->
+    <div id="view-doctor-alerting" class="card glass-card" style="padding: 2.5rem 2rem; display: none; border-radius: 30px; text-align: center;">
+        <h2 style="font-size: 1.3rem; margin-bottom: 1.5rem; color: #1565C0;">Doctor Verification</h2>
+        
+        <div id="alert-loader">
+            <div style="margin: 0 auto 1.5rem; width: 60px; height: 60px; border: 6px solid #f3f3f3; border-top: 6px solid #d32f2f; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+            <p id="alert-status" style="font-weight: 700; color: #d32f2f; margin-bottom: 0.5rem;">⌛ GETTING CURRENT LOCATION...</p>
+            <p style="font-size: 0.85rem; color: #666;">We must notify the family before showing medical records.</p>
+        </div>
+
+        <div id="alert-action" style="display: none;">
+            <p style="color: #2e7d32; font-weight: 700; margin-bottom: 1.5rem;">✅ Location Locked!</p>
+            <button id="wa-alert-btn" onclick="triggerDoctorReveal()" style="background: #25D366; color: white; border: none; padding: 1.5rem; border-radius: 20px; font-weight: 700; font-size: 1.1rem; cursor: pointer; width: 100%; box-shadow: 0 10px 20px rgba(37,211,102,0.3);">
+                📲 Send Family Alert & Unlock
+            </button>
+            <p style="font-size: 0.8rem; color: #666; margin-top: 1rem;">Tap to open WhatsApp and reveal profile.</p>
+        </div>
+    </div>
+
+    <!-- 4. DOCTOR FULL VIEW (Rendered by Jinja if verified) -->
+    {% if session.get('verified_' + profile.arogya_id) %}
+    <div id="view-doctor-full" class="card glass-card" style="padding: 2rem; border-radius: 30px; display: block; border-top: 6px solid #1565C0; margin-top: 1rem;">
+        <div style="background: #e3f2fd; color: #1565C0; padding: 6px 15px; border-radius: 50px; font-size: 0.75rem; font-weight: 800; display: inline-block; margin-bottom: 1.5rem;">
+            🛡️ SECURE MEDICAL ACCESS
+        </div>
+        
+        <h2 style="font-size: 1.5rem; margin-bottom: 1.2rem; color: #333;">{{ profile.full_name }}</h2>
+
+        <!-- Added WhatsApp Location for Doctors too -->
+        <button onclick="shareHelperLocation()" style="background: #25D366; color: white; border: none; padding: 0.8rem; border-radius: 12px; font-weight: 700; font-size: 0.9rem; cursor: pointer; width: 100%; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            📍 Update Family with Location
+        </button>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 2rem;">
+            <div style="background: rgba(0,0,0,0.03); padding: 12px; border-radius: 15px;">
+                <span style="font-size: 0.75rem; color: #666; text-transform: uppercase;">Age</span><br><b style="font-size: 1.1rem;">{{ profile.age or 'N/A' }} yrs</b>
+            </div>
+            <div style="background: rgba(0,0,0,0.03); padding: 12px; border-radius: 15px;">
+                <span style="font-size: 0.75rem; color: #666; text-transform: uppercase;">Blood Group</span><br><b style="font-size: 1.1rem; color: #d32f2f;">{{ profile.blood_group }}</b>
+            </div>
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+            <h3 style="font-size: 0.9rem; color: #d32f2f; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 5px;">⚠️ CRITICAL HISTORY</h3>
+            <div style="background: #fff5f5; border-left: 4px solid #d32f2f; padding: 15px; border-radius: 0 15px 15px 0;">
+                <p style="margin-bottom: 8px;"><b>Allergies:</b> {{ profile.allergies or 'None' }}</p>
+                <p style="margin-bottom: 8px;"><b>Conditions:</b> {{ profile.chronic_conditions or 'None' }}</p>
+                <p><b>Surgeries:</b> {{ profile.past_surgeries or 'None' }}</p>
+            </div>
+        </div>
+
+        <div style="margin-bottom: 2rem;">
+            <h3 style="font-size: 0.9rem; color: #1565C0; margin-bottom: 0.5rem;">💊 CURRENT MEDICATIONS</h3>
+            <div style="background: #e3f2fd; border-left: 4px solid #1565C0; padding: 15px; border-radius: 0 15px 15px 0;">
+                <p>{{ profile.current_medications or 'None reported' }}</p>
+            </div>
+        </div>
+
+        <div style="background: rgba(0,0,0,0.03); padding: 15px; border-radius: 15px; font-size: 0.85rem;">
+            <p style="margin-bottom: 5px;"><b>Address:</b> {{ profile.city }}, {{ profile.state }}</p>
+            <p><b>Organ Donor:</b> {{ 'Yes' if profile.organ_donor else 'No' }}</p>
+        </div>
+
+        <button onclick="resetView()" style="margin-top: 2rem; background: none; border: 1px solid #ddd; color: #999; padding: 10px; border-radius: 12px; width: 100%; cursor: pointer; font-size: 0.85rem;">
+            🔄 Switch Role / Logout
+        </button>
+    </div>
+    {% endif %}
+
+</div>
+
+<style>
+    .glass-card { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+    .btn:active { transform: scale(0.98); }
+</style>
+
+<script>
+const arogyaID = "{{ profile.arogya_id }}";
+const contactPhone = "{{ profile.emergency_contact1_phone }}";
+const firstName = "{{ profile.full_name.split(' ')[0] }}";
+
+// Logic to show/hide views
+window.onload = function() {
+    {% if session.get('verified_' + profile.arogya_id) %}
+    // If already a verified doctor, hide the choice and show the profile
+    document.getElementById('role-chooser').style.display = 'none';
+    {% else %}
+    // New visitor: show the choice
+    document.getElementById('role-chooser').style.display = 'block';
+    {% endif %}
+    
+    // FORCIBLY REQUEST LOCATION ON LOAD FOR EMERGENCY
+    if (navigator.geolocation) {
+        const gpsOptions = { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 };
+        
+        navigator.geolocation.getCurrentPosition((pos) => {
+            window.cachedLat = pos.coords.latitude;
+            window.cachedLng = pos.coords.longitude;
+            console.log("Emergency Location Cached.");
+        }, (err) => {
+            console.warn("GPS Error:", err.message);
+            if(window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
+                console.warn("Mobile browsers block GPS on HTTP. Use HTTPS for full SOS features.");
+            }
+        }, gpsOptions);
+    }
+};
+
+function showHelper() {
+    document.getElementById('role-chooser').style.display = 'none';
+    document.getElementById('view-helper').style.display = 'block';
+    
+    // Remind them if location was denied
+    if(!window.cachedLat) {
+        if(window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
+            alert("🔒 Mobile Security: Your mobile browser is blocking GPS because this connection is not HTTPS. \n\nTip: For the hackathon, please use a laptop or ensure HTTPS is enabled for real-time location tracking.");
+        } else {
+            alert("📍 Tip: Please click 'Allow' for location access so you can share the GPS spot with the family.");
+        }
+    }
+}
+
+function showDoctor() {
+    {% if session.get('verified_' + profile.arogya_id) %}
+    document.getElementById('role-chooser').style.display = 'none';
+    // If already verified, Jinja shows view-doctor-full
+    {% else %}
+    document.getElementById('role-chooser').style.display = 'none';
+    document.getElementById('view-doctor-alerting').style.display = 'block';
+    
+    // Get Location
+    navigator.geolocation.getCurrentPosition((pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        const mapsUrl = `https://maps.google.com/?q=${lat},${lng}`;
+        const msg = `EMERGENCY: ${firstName} is in a medical crisis. A Doctor is accessing their profile.\n\n📍 Location: ${mapsUrl}`;
+        const waUrl = `https://wa.me/91${contactPhone.replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`;
+        
+        document.getElementById('alert-loader').style.display = 'none';
+        document.getElementById('alert-action').style.display = 'block';
+        
+        // Save URL for the button
+        window.doctorAlertUrl = waUrl;
+    }, (err) => {
+        // Fallback no GPS
+        const msg = `EMERGENCY: ${firstName} is in a medical crisis. A Doctor is accessing their profile. (Location access denied)`;
+        const waUrl = `https://wa.me/91${contactPhone.replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`;
+        document.getElementById('alert-status').innerText = "⚠️ Location Unavailable";
+        document.getElementById('alert-loader').style.display = 'none';
+        document.getElementById('alert-action').style.display = 'block';
+        window.doctorAlertUrl = waUrl;
+    });
+    {% endif %}
+}
+
+function triggerDoctorReveal() {
+    window.open(window.doctorAlertUrl, '_blank');
+    
+    // Auto-verify in background after alert is opened
+    setTimeout(async () => {
+        await fetch('/verify-doctor-otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ arogya_id: arogyaID, otp: '123456' })
+        });
+        location.reload();
+    }, 1000);
+}
+
+function shareHelperLocation() {
+    const btn = event.target;
+    const originalText = btn.innerText;
+    
+    const sendWA = (lat, lng) => {
+        const mapsUrl = `https://maps.google.com/?q=${lat},${lng}`;
+        const msg = `🚨 EMERGENCY ALERT: ${firstName} needs urgent help! \n\n📍 My current location (Helping ${firstName}): ${mapsUrl}`;
+        window.open(`https://wa.me/91${contactPhone.replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`, '_blank');
+    };
+
+    // Use cached if available
+    if(window.cachedLat && window.cachedLng) {
+        sendWA(window.cachedLat, window.cachedLng);
+    } else {
+        // Try one last time
+        btn.innerText = "⏳ Checking GPS...";
+        navigator.geolocation.getCurrentPosition((pos) => {
+            sendWA(pos.coords.latitude, pos.coords.longitude);
+            btn.innerText = originalText;
+        }, (err) => {
+            const msg = `🚨 EMERGENCY ALERT: ${firstName} needs urgent help! \n\n⚠️ Note: I am with ${firstName} now, but GPS access was denied. Please contact me!`;
+            btn.innerText = originalText;
+            window.open(`https://wa.me/91${contactPhone.replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`, '_blank');
+        });
+    }
+}
+
+async function resetView() {
+    await fetch('/reset-emergency-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ arogya_id: arogyaID })
+    });
+    location.reload();
+}
+</script>
+{% endblock %}

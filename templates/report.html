@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Health Report — ArogyaAI{% endblock %}
+
+{% block content %}
+<style>
+  @media (max-width: 600px) {
+    .report-header { padding: 1.2rem !important; border-radius: 20px !important; }
+    .report-header h1 { font-size: 1.5rem !important; }
+    .glass-card { padding: 1.2rem !important; border-radius: 20px !important; }
+    .glass-card h2 { font-size: 1.3rem !important; }
+    .priority-banner { flex-direction: column; text-align: center; gap: 10px !important; }
+    .priority-banner div { width: 100%; justify-content: center; }
+    .btn-lg { padding: 1.1rem !important; font-size: 1.1rem !important; }
+  }
+</style>
+
+<div class="page fade-in">
+  <!-- Premium Header -->
+  <div class="report-header" style="background:linear-gradient(135deg,#1565C0,#2E7D32);padding:2rem;border-radius:24px;margin-bottom:2rem;color:white;box-shadow:0 10px 30px rgba(0,0,0,0.1);">
+    <h1 style="font-family:'Poppins',sans-serif;font-size:1.8rem;font-weight:900;margin:0;">📄 Digital Health Report</h1>
+    <p style="font-size:0.95rem;font-weight:600;margin-top:0.4rem;opacity:0.9;">ArogyaAI Verified Diagnostic Report</p>
+  </div>
+
+  {% if predictions %}
+  <!-- Top Diagnosis -->
+  <div class="card glass-card" style="margin-bottom:1.5rem;padding:2rem;border-radius:24px;border-top:8px solid #2E7D32;">
+    <p style="font-size:0.75rem;font-weight:800;color:#9e9e9e;text-transform:uppercase;letter-spacing:1px;margin-bottom:0.5rem;">Primary AI Diagnosis</p>
+    <h2 style="font-size:1.6rem;font-weight:900;color:#1a237e;margin:0;">{{ top_disease }}</h2>
+    <div style="display:flex;align-items:center;gap:0.5rem;margin-top:0.8rem; flex-wrap: wrap;">
+        <span style="background:{% if predictions[0].percent >= 70 %}#FFEBEE{% elif predictions[0].percent >= 40 %}#FFFDE7{% else %}#E8F5E9{% endif %}; color:{% if predictions[0].percent >= 70 %}#C62828{% elif predictions[0].percent >= 40 %}#F9A825{% else %}#2E7D32{% endif %}; padding:0.3rem 0.8rem; border-radius:12px; font-weight:800; font-size:1rem;">
+            {{ predictions[0].percent }}% Match
+        </span>
+        <span style="color:#757575;font-size:0.85rem;font-weight:600;">AI Trust Score</span>
+    </div>
+  </div>
+
+  <!-- Severity & Department -->
+  {% set level = severity.get('level','MILD') %}
+  <div class="priority-banner" style="background:rgba(255, 255, 255, 0.8);backdrop-filter:blur(10px);border-radius:24px;padding:1.5rem;margin-bottom:1.5rem;display:flex;align-items:center;gap:1.2rem;border:1px solid rgba(0,0,0,0.05);box-shadow:0 8px 30px rgba(0,0,0,0.02);">
+    <div style="width:60px;height:60px;border-radius:18px;background:{% if level == 'CRITICAL' %}#FFEBEE{% elif level == 'MODERATE' %}#FFFDE7{% else %}#E8F5E9{% endif %};display:flex;align-items:center;justify-content:center;font-size:2rem;flex-shrink:0; margin: 0 auto;">
+        {% if level == 'CRITICAL' %}🚨{% elif level == 'MODERATE' %}⚠️{% else %}✅{% endif %}
+    </div>
+    <div style="flex: 1;">
+        <span style="background:{% if level == 'CRITICAL' %}#C62828{% elif level == 'MODERATE' %}#F9A825{% else %}#2E7D32{% endif %};color:white;padding:0.2rem 0.8rem;border-radius:8px;font-size:0.75rem;font-weight:900;text-transform:uppercase; letter-spacing: 1px;">{{ level }} PRIORITY</span>
+        <p style="margin:0.4rem 0 0 0;font-size:1.1rem;color:#1a237e;font-weight:800;">DEPT: {{ severity.get('department','General Physician') }}</p>
+    </div>
+  </div>
+
+  <!-- Full Breakdown -->
+  <div class="card glass-card" style="margin-bottom:1.5rem;padding:1.5rem;border-radius:24px;">
+    <h3 style="font-size:1rem;font-weight:800;margin-bottom:1.2rem;color:#1a237e;text-transform:uppercase;">📊 Diagnostic Breakdown</h3>
+    {% for p in predictions %}
+    <div style="display:flex;justify-content:space-between;padding:0.8rem 0;border-bottom:1px solid rgba(0,0,0,0.04);align-items:center;">
+      <span style="font-size:0.95rem;font-weight:600;color:#333;">{{ loop.index }}. {{ p.disease }}</span>
+      <span style="font-weight:800;color:{% if p.percent >= 70 %}#C62828{% elif p.percent >= 40 %}#F9A825{% else %}#2E7D32{% endif %};">{{ p.percent }}%</span>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Precautions -->
+  {% if severity.precautions %}
+  <div class="card glass-card" style="margin-bottom:1.5rem;padding:1.5rem;border-radius:24px;border-left:8px solid #F9A825;">
+    <h3 style="font-size:1rem;font-weight:800;margin-bottom:1rem;color:#1a237e;text-transform:uppercase;">🛡️ AI Precautions</h3>
+    <div style="display:grid;gap:0.8rem;">
+        {% for p in severity.precautions %}
+        <div style="display:flex;gap:0.6rem;align-items:flex-start;">
+            <span>🛡️</span>
+            <p style="font-size:0.9rem;color:#424242;margin:0;line-height:1.4;font-weight:500;">{{ p }}</p>
+        </div>
+        {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Appointment Details -->
+  {% if booking_id %}
+  <div class="card glass-card" style="margin-bottom:2rem;padding:1.5rem;border-radius:24px;background:rgba(21, 101, 192, 0.02);border:1px dashed #1565C0;">
+    <h3 style="font-size:1rem;font-weight:800;margin-bottom:1.2rem;color:#1565C0;text-transform:uppercase;">📅 Active Appointment</h3>
+    <div style="display:grid;gap:0.6rem;font-size:0.95rem;">
+        <p style="margin:0;color:#555;">Doctor: <strong style="color:#333;">{{ booking_doctor }}</strong></p>
+        <p style="margin:0;color:#555;">Facility: {{ booking_hospital }}</p>
+        <p style="margin:0;color:#555;">Date: <strong style="color:#1a237e;">{{ booking_date }} at {{ booking_time }}</strong></p>
+        <p style="margin:0.2rem 0 0 0;color:#2E7D32;font-weight:900;">Ref ID: {{ booking_id }}</p>
+    </div>
+  </div>
+  {% endif %}
+
+  <a href="/download-pdf" class="btn btn-primary btn-lg btn-full" style="padding:1.2rem;border-radius:18px;background:linear-gradient(135deg,#1565C0,#2E7D32);font-weight:900;box-shadow:0 10px 25px rgba(0,0,0,0.15);">
+    ⬇️ Generate Official PDF
+  </a>
+
+  {% else %}
+  <div style="text-align:center;padding:3rem 1rem;">
+    <div style="font-size:3rem;margin-bottom:1rem;">🔍</div>
+    <p style="color:#757575;">No analysis yet. Start by checking your symptoms.</p>
+    <a href="/symptoms" class="btn btn-primary mt-2">Check Symptoms</a>
+  </div>
+  {% endif %}
+
+  <div class="disclaimer mt-3">
+    ⚠️ This report is generated by AI and is NOT a substitute for professional medical advice. Always consult a qualified doctor for diagnosis and treatment.
+  </div>
+</div>
+{% endblock %}

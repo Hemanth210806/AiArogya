@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}Med-Bot Assistant — ArogyaAI{% endblock %}
+
+{% block content %}
+<style>
+  @media (max-width: 600px) {
+    .chatbot-header { padding: 1.2rem !important; border-radius: 20px !important; margin-bottom: 1rem !important; }
+    .chatbot-header h1 { font-size: 1.4rem !important; }
+    #chat-window { height: calc(100vh - 320px) !important; padding: 1rem !important; border-radius: 20px !important; margin-bottom: 1rem !important; }
+    .bubble { max-width: 90% !important; font-size: 0.9rem !important; }
+    .chat-input-container { border-radius: 15px !important; padding: 0.5rem !important; }
+    .chat-input-container button { padding: 0.6rem 1rem !important; font-size: 0.85rem !important; }
+  }
+</style>
+
+<div class="page fade-in">
+  <!-- Premium Header -->
+  <div class="chatbot-header" style="background:linear-gradient(135deg,#1565C0,#2E7D32);padding:2rem;border-radius:24px;margin-bottom:2rem;color:white;box-shadow:0 10px 30px rgba(0,0,0,0.1);">
+    <h1 style="font-family:'Poppins',sans-serif;font-size:1.8rem;font-weight:900;margin:0;">💬 Med-Bot Assistant</h1>
+    <p style="font-size:0.95rem;font-weight:600;margin-top:0.4rem;opacity:0.9;">AI-powered drug interactions & guidance</p>
+  </div>
+
+  <!-- Chat Window -->
+  <div id="chat-window" style="height:450px;overflow-y:auto;background:rgba(255,255,255,0.7);backdrop-filter:blur(10px);border-radius:28px;padding:1.5rem;margin-bottom:1.5rem;display:flex;flex-direction:column;gap:1rem;border:1px solid rgba(0,0,0,0.05);box-shadow:inset 0 4px 15px rgba(0,0,0,0.02);">
+    <div class="chat-msg bot">
+      <div class="bubble bot-bubble" style="border-radius:20px 20px 20px 4px;padding:1.2rem;box-shadow:0 5px 15px rgba(0,0,0,0.05);">
+        <p style="margin:0;font-weight:700;color:#1565C0;margin-bottom:0.5rem;">👋 Hello! I'm Arogya AI</p>
+        I can help you understand your medications, identify potential side effects, and check for safe usage.<br><br>
+        <em style="font-size:0.75rem;font-weight:600;color:#757575;">Disclaimer: AI insights only. Consult your physician.</em>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Questions -->
+  <div style="display:flex;gap:0.6rem;overflow-x:auto;padding-bottom:0.8rem;margin-bottom:1rem;scrollbar-width:none;" class="custom-scroll">
+    {% set quickqs = ['Common side effects?', 'Safe with alcohol?', 'Drug interactions?', 'Best time to take?', 'Missed dose advice?'] %}
+    {% for q in quickqs %}
+    <button onclick="sendQuick('{{ q }}')" style="background:rgba(255,255,255,0.9);border:1px solid #BBDEFB;color:#1565C0;padding:0.6rem 1rem;border-radius:15px;font-size:0.85rem;font-weight:700;white-space:nowrap;cursor:pointer;flex-shrink:0;box-shadow:0 4px 10px rgba(0,0,0,0.02);">{{ q }}</button>
+    {% endfor %}
+  </div>
+
+  <!-- Modern Input -->
+  <div class="chat-input-container" style="display:flex;gap:0.8rem;background:rgba(255,255,255,0.9);padding:0.6rem;border-radius:22px;border:1px solid rgba(0,0,0,0.05);box-shadow:0 10px 30px rgba(0,0,0,0.05);">
+    <input type="text" id="chat-input" class="form-control" placeholder="Ask Med-Bot anything..." value="{{ prefill }}"
+      style="border:none;background:transparent;padding-left:1rem;font-weight:600;font-size:0.95rem; flex: 1;"
+      onkeydown="if(event.key==='Enter') sendMsg()"/>
+    <button onclick="sendMsg()" class="btn btn-primary" style="border-radius:18px;padding:0.8rem 1.5rem;background:linear-gradient(135deg,#1565C0,#1E88E5);font-weight:800;">
+        🚀 Send
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+.chat-msg { display:flex; }
+.chat-msg.user { justify-content:flex-end; }
+.bubble { max-width:80%;padding:0.7rem 1rem;border-radius:14px;font-size:0.88rem;line-height:1.6; }
+.bot-bubble  { background:#fff;color:#424242;border-bottom-left-radius:4px;box-shadow:0 1px 4px rgba(0,0,0,0.08); }
+.user-bubble { background:linear-gradient(135deg,#2E7D32,#1565C0);color:#fff;border-bottom-right-radius:4px; }
+.typing { display:flex;gap:4px;align-items:center;padding:0.7rem 1rem;background:#fff;border-radius:14px;width:fit-content; }
+.dot { width:7px;height:7px;border-radius:50%;background:#bdbdbd;animation:bounce 1.2s infinite; }
+.dot:nth-child(2){animation-delay:0.2s}.dot:nth-child(3){animation-delay:0.4s}
+@keyframes bounce { 0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-8px)} }
+</style>
+<script>
+function appendMsg(text, role) {
+  const win = document.getElementById('chat-window');
+  const div = document.createElement('div');
+  div.className = `chat-msg ${role}`;
+  div.innerHTML = `<div class="bubble ${role}-bubble">${text.replace(/\n/g,'<br/>')}</div>`;
+  win.appendChild(div);
+  win.scrollTop = win.scrollHeight;
+  return div;
+}
+
+function sendQuick(q) {
+  document.getElementById('chat-input').value = q;
+  sendMsg();
+}
+
+function sendMsg() {
+  const input = document.getElementById('chat-input');
+  const q = input.value.trim();
+  if (!q) return;
+  input.value = '';
+  appendMsg(q, 'user');
+
+  // Typing indicator
+  const win = document.getElementById('chat-window');
+  const typing = document.createElement('div');
+  typing.className = 'chat-msg bot';
+  typing.innerHTML = '<div class="typing"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>';
+  win.appendChild(typing);
+  win.scrollTop = win.scrollHeight;
+
+  fetch('/chatbot/ask', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({question: q})
+  }).then(r => r.json()).then(d => {
+    typing.remove();
+    appendMsg(d.answer || 'Sorry, I could not answer that.', 'bot');
+  }).catch(() => {
+    typing.remove();
+    appendMsg('Connection error. Please try again.', 'bot');
+  });
+}
+
+// Auto-send prefill if provided
+window.onload = () => {
+  const v = document.getElementById('chat-input').value.trim();
+  if (v) setTimeout(sendMsg, 500);
+};
+</script>
+{% endblock %}

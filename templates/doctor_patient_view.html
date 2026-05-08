@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% block title %}Patient Consultation — ArogyaAI{% endblock %}
+
+{% block content %}
+<style>
+  @media (max-width: 768px) {
+    .consultation-grid { grid-template-columns: 1fr !important; gap: 1rem !important; }
+    .medicine-row { grid-template-columns: 1fr !important; gap: 8px !important; background: #f8f9fa; padding: 10px; border-radius: 10px; }
+    .section-title { font-size: 1.4rem !important; }
+    .card { padding: 1.2rem !important; }
+  }
+</style>
+
+<div class="page fade-in">
+  <div style="margin-bottom: 1.5rem;">
+    <a href="/doctor/dashboard" style="color: #1565C0; text-decoration: none; font-weight: 700; font-size: 0.9rem;">← Back to Appointments</a>
+    <h1 class="section-title" style="margin-top: 1rem; font-weight: 900; color: #1a237e;">👨‍⚕️ Patient Consultation</h1>
+    <p class="section-subtitle" style="font-weight: 600; color: #5c6bc0;">{{ booking.patient_name }} ({{ booking.age }} yrs)</p>
+  </div>
+
+  <div class="consultation-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; align-items: start;">
+    
+    <!-- Left Column: Patient History & Analysis -->
+    <div class="column">
+      <div class="card glass-card" style="margin-bottom: 1.5rem; border-left: 5px solid #1565C0; border-radius: 20px;">
+        <h3 style="font-size: 1rem; margin-bottom: 1rem; font-weight: 800; color: #1a237e;">🔬 Recent AI Analysis</h3>
+        {% if history %}
+          {% set latest = history[0] %}
+          <div style="background: rgba(21, 101, 192, 0.05); padding: 1.2rem; border-radius: 15px; margin-bottom: 1rem; border: 1px solid rgba(21, 101, 192, 0.1);">
+            <p style="font-size: 0.75rem; color: #666; margin-bottom: 0.3rem; font-weight: 700;">Latest Prediction ({{ latest.created_at.strftime('%d %b, %H:%M') }})</p>
+            <h4 style="color: #1a237e; margin: 0; font-weight: 900; font-size: 1.1rem;">{{ latest.predicted_disease }} ({{ (latest.confidence_score*100)|int }}%)</h4>
+            <div style="margin-top: 0.8rem; display: flex; flex-wrap: wrap; gap: 0.4rem;">
+              {% for s in latest.symptoms_entered|fromjson %}
+                <span class="badge" style="font-size: 0.7rem; background: white; color: #1565c0; font-weight: 800; padding: 4px 10px; border-radius: 50px; border: 1px solid rgba(21, 101, 192, 0.2);">{{ s.replace('_',' ').title() }}</span>
+              {% endfor %}
+            </div>
+          </div>
+          
+          <h4 style="font-size: 0.85rem; margin-bottom: 0.8rem; color: #1565C0; font-weight: 800;">Past Patient History</h4>
+          <div style="max-height: 200px; overflow-y: auto;" class="custom-scroll">
+            {% for h in history[1:] %}
+              <div style="font-size: 0.85rem; padding: 0.6rem 0; border-bottom: 1px solid #eee; display: flex; justify-content: space-between;">
+                <span style="color: #999; font-weight: 600;">{{ h.created_at.strftime('%d %b') }}</span>
+                <strong style="color: #444;">{{ h.predicted_disease }}</strong>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p style="color: #999; font-size: 0.9rem; text-align: center; padding: 1rem;">No previous history recorded.</p>
+        {% endif %}
+      </div>
+
+      <div class="card" style="background: #FFF9C4; border: none; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+        <h3 style="font-size: 0.9rem; margin-bottom: 0.5rem; font-weight: 800; color: #5D4037;">📝 Patient's Current Note</h3>
+        <p style="font-size: 0.85rem; color: #5D4037; line-height: 1.5;">{{ booking.note or 'No additional notes provided.' }}</p>
+      </div>
+    </div>
+
+    <!-- Right Column: Prescription Form -->
+    <div class="column">
+      <div class="card" style="border-top: 8px solid #2e7d32; border-radius: 24px; box-shadow: 0 15px 35px rgba(0,0,0,0.08);">
+        <h3 style="margin-bottom: 1.5rem; color: #1b5e20; font-weight: 900;">💊 Digital Prescription</h3>
+        
+        <div class="form-group" style="margin-bottom: 1.2rem;">
+            <label style="display: block; font-size: 0.8rem; font-weight: 800; margin-bottom: 0.4rem; color: #2e7d32; text-transform: uppercase;">Diagnosis / Clinical Observation</label>
+            <textarea id="diagnosis" class="form-control" placeholder="Write your clinical notes here..." style="width: 100%; border-radius: 12px; border: 1.5px solid #eee; padding: 0.8rem; height: 100px; font-family: inherit; font-size: 0.9rem;"></textarea>
+        </div>
+
+        <div id="medicines-container">
+            <label style="display: block; font-size: 0.8rem; font-weight: 800; margin-bottom: 0.8rem; color: #2e7d32; text-transform: uppercase;">Medicines & Dosage</label>
+            <div class="medicine-row" style="display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 0.5rem; margin-bottom: 0.8rem;">
+                <input type="text" class="med-name" placeholder="Med Name" style="padding: 0.7rem; border-radius: 8px; border: 1.5px solid #eee; font-size: 0.85rem;">
+                <input type="text" class="med-dosage" placeholder="Dose (e.g. 1 cap)" style="padding: 0.7rem; border-radius: 8px; border: 1.5px solid #eee; font-size: 0.85rem;">
+                <select class="med-freq" style="padding: 0.7rem; border-radius: 8px; border: 1.5px solid #eee; font-size: 0.85rem; background: white;">
+                    <option value="Once daily">Once (1-0-0)</option>
+                    <option value="Twice daily">Twice (1-0-1)</option>
+                    <option value="Thrice daily">Thrice (1-1-1)</option>
+                </select>
+            </div>
+        </div>
+        <button type="button" onclick="addMedicineRow()" style="background: rgba(46, 125, 50, 0.05); border: 1px dashed #2e7d32; color: #2e7d32; font-size: 0.8rem; font-weight: 800; cursor: pointer; margin-bottom: 1.5rem; padding: 10px; width: 100%; border-radius: 10px;">+ Add New Medicine Row</button>
+
+        <div class="form-group" style="margin-bottom: 1.2rem;">
+            <label style="display: block; font-size: 0.8rem; font-weight: 800; margin-bottom: 0.4rem; color: #2e7d32;">SPECIAL INSTRUCTIONS</label>
+            <input type="text" id="instructions" class="form-control" placeholder="e.g. Empty stomach, Drink plenty of water" style="width: 100%; border-radius: 12px; border: 1.5px solid #eee; padding: 0.8rem; font-size: 0.9rem;">
+        </div>
+
+        <div class="form-group" style="margin-bottom: 1.5rem;">
+            <label style="display: block; font-size: 0.8rem; font-weight: 800; margin-bottom: 0.4rem; color: #2e7d32;">FOLLOW-UP DATE</label>
+            <input type="date" id="follow_up" class="form-control" style="width: 100%; border-radius: 12px; border: 1.5px solid #eee; padding: 0.8rem; font-size: 0.9rem;">
+        </div>
+
+        <button onclick="submitPrescription()" class="btn btn-success btn-full" style="background: linear-gradient(135deg, #2e7d32, #43a047); border: none; padding: 1.1rem; border-radius: 15px; font-weight: 800; font-size: 1rem; box-shadow: 0 10px 20px rgba(46,125,50,0.2);">📤 Submit & Notify Patient</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function addMedicineRow() {
+    const container = document.getElementById('medicines-container');
+    const div = document.createElement('div');
+    div.className = 'medicine-row';
+    div.style = 'display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 0.4rem; margin-bottom: 0.5rem;';
+    div.innerHTML = `
+        <input type="text" class="med-name" placeholder="Medicine Name" style="padding: 0.4rem; border-radius: 4px; border: 1px solid #ddd;">
+        <input type="text" class="med-dosage" placeholder="Dosage" style="padding: 0.4rem; border-radius: 4px; border: 1px solid #ddd;">
+        <select class="med-freq" style="padding: 0.4rem; border-radius: 4px; border: 1px solid #ddd;">
+            <option value="Once daily">Once daily</option>
+            <option value="Twice daily">Twice daily</option>
+            <option value="Thrice daily">Thrice daily</option>
+        </select>
+    `;
+    container.appendChild(div);
+}
+
+function submitPrescription() {
+    const medicines = [];
+    document.querySelectorAll('.medicine-row').forEach(row => {
+        const name = row.querySelector('.med-name').value;
+        if(name) {
+            medicines.push({
+                name: name,
+                dosage: row.querySelector('.med-dosage').value,
+                frequency: row.querySelector('.med-freq').value,
+                duration: '5 days' // Default
+            });
+        }
+    });
+
+    const data = {
+        patient_id: {{ user.id }},
+        appointment_id: {{ booking.id }},
+        diagnosis: document.getElementById('diagnosis').value,
+        instructions: document.getElementById('instructions').value,
+        follow_up_date: document.getElementById('follow_up').value,
+        medicines: medicines
+    };
+
+    fetch('/doctor/prescribe', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+    })
+    .then(r => r.json())
+    .then(res => {
+        if(res.status === 'success') {
+            alert('Prescription submitted and patient notified!');
+            window.location.href = '/doctor/dashboard';
+        }
+    });
+}
+</script>
+{% endblock %}

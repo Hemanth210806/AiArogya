@@ -1,0 +1,30 @@
+# Python Caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Databases (We keep schema, but not the actual data file)
+*.db
+!arogya_schema.sql
+instance/
+database/arogya.db
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# OS specific files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Project specific junk
+scratch/
+debug_*.py
+check_database.py

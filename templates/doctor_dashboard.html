@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}Doctor Dashboard — ArogyaAI{% endblock %}
+
+{% block content %}
+<style>
+  @media (max-width: 600px) {
+    .doctor-header { flex-direction: column !important; align-items: flex-start !important; gap: 1rem; }
+    .dashboard-grid { grid-template-columns: 1fr !important; gap: 10px !important; }
+    
+    /* Responsive Table to Cards */
+    table thead { display: none; }
+    table tr { display: block; background: white; margin-bottom: 1rem; border-radius: 15px; padding: 1rem; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+    table td { display: flex; justify-content: space-between; padding: 8px 0 !important; border: none !important; }
+    table td::before { content: attr(data-label); font-weight: 700; color: #757575; }
+    table td:last-child { justify-content: center; margin-top: 10px; border-top: 1px solid #eee !important; padding-top: 15px !important; }
+  }
+</style>
+
+<div class="page fade-in">
+  <div class="doctor-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <div>
+      <h1 class="section-title" style="font-size: 1.5rem; font-weight: 900; color: #1a237e;">👨‍⚕️ Welcome, Dr. {{ doctor.name }}</h1>
+      <p class="section-subtitle" style="font-size: 0.9rem; font-weight: 600; color: #5c6bc0;">{{ doctor.specialization or 'Specialist' }} | {{ doctor.department.name if doctor.department else 'General' }}</p>
+    </div>
+    <div style="text-align: right;">
+        <label class="switch-wrap" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+            <span id="avail-status" style="font-size: 0.85rem; font-weight: 700; color: {{ '#2e7d32' if doctor.is_available else '#c62828' }};">
+                {{ '🟢 Available' if doctor.is_available else '🔴 Unavailable' }}
+            </span>
+            <input type="checkbox" id="avail-toggle" {{ 'checked' if doctor.is_available else '' }} onchange="toggleAvailability()" style="display: none;">
+            <div class="switch" style="width: 40px; height: 20px; background: #ddd; border-radius: 20px; position: relative;">
+                <div class="dot" style="width: 16px; height: 16px; background: white; border-radius: 50%; position: absolute; top: 2px; left: {{ '22px' if doctor.is_available else '2px' }}; transition: 0.3s;"></div>
+            </div>
+        </label>
+    </div>
+  </div>
+
+  <div class="dashboard-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+    <div class="card" style="background: linear-gradient(135deg, #2e7d32, #43a047); color: white; border: none; padding: 1.5rem; border-radius: 20px; box-shadow: 0 8px 20px rgba(46,125,50,0.25);">
+      <p style="font-size: 0.8rem; opacity: 0.9; margin-bottom: 0.4rem; font-weight: 600; text-transform: uppercase;">Today's Appointments</p>
+      <h2 style="font-size: 2.2rem; margin: 0; font-weight: 900;">{{ appointments|length }}</h2>
+    </div>
+    <div class="card" style="background: linear-gradient(135deg, #1565c0, #1e88e5); color: white; border: none; padding: 1.5rem; border-radius: 20px; box-shadow: 0 8px 20px rgba(21,101,192,0.25);">
+      <p style="font-size: 0.8rem; opacity: 0.9; margin-bottom: 0.4rem; font-weight: 600; text-transform: uppercase;">Total Consultations</p>
+      <h2 style="font-size: 2.2rem; margin: 0; font-weight: 900;">{{ total_consultations }}</h2>
+    </div>
+    <div class="card" style="background: linear-gradient(135deg, #f9a825, #fbc02d); color: white; border: none; padding: 1.5rem; border-radius: 20px; box-shadow: 0 8px 20px rgba(249,168,37,0.25);">
+      <p style="font-size: 0.8rem; opacity: 0.9; margin-bottom: 0.4rem; font-weight: 600; text-transform: uppercase;">Earnings (Est.)</p>
+      <h2 style="font-size: 2.2rem; margin: 0; font-weight: 900;">₹{{ earnings }}</h2>
+    </div>
+  </div>
+
+  <h2 style="font-size: 1.2rem; margin-bottom: 1.2rem; color: #1a237e; font-weight: 900; display: flex; align-items: center; gap: 0.5rem;">
+    📅 Appointments for Today <span style="font-size: 0.8rem; background: #e8eaf6; color: #3f51b5; padding: 4px 10px; border-radius: 20px;">{{ today }}</span>
+  </h2>
+  <div class="card glass-card" style="padding: 0; overflow: hidden; background: white; border-radius: 20px; margin-bottom: 2.5rem; box-shadow: 0 4px 20px rgba(0,0,0,0.05);">
+    <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+      <thead style="background: #f5f7fa; color: #5c6bc0; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px;">
+        <tr>
+          <th style="padding: 1rem; text-align: left;">Time</th>
+          <th style="padding: 1rem; text-align: left;">Patient</th>
+          <th style="padding: 1rem; text-align: left;">Age</th>
+          <th style="padding: 1rem; text-align: center;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for appt in appointments %}
+        <tr style="border-bottom: 1px solid #eee;">
+          <td data-label="Time" style="padding: 1rem; font-weight: 800; color: #1565C0;">{{ appt.slot.time }}</td>
+          <td data-label="Patient" style="padding: 1rem; font-weight: 600;">{{ appt.patient_name }}</td>
+          <td data-label="Age" style="padding: 1rem;">{{ appt.age or 'N/A' }}</td>
+          <td style="padding: 1rem; text-align: center;">
+            <a href="{{ url_for('doctor.patient_report', user_id=appt.user_id, booking_id=appt.id) }}" class="btn btn-primary btn-sm" style="border-radius: 50px; padding: 8px 18px; font-weight: 700;">View & Prescribe</a>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="4" style="padding: 3rem; text-align: center; color: #999; font-weight: 600;">No appointments for today.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- New Section: Upcoming Appointments -->
+  <h2 style="font-size: 1.2rem; margin-bottom: 1.2rem; color: #1a237e; font-weight: 900; display: flex; align-items: center; gap: 0.5rem;">
+    🚀 Upcoming Appointments <span style="font-size: 0.8rem; background: #fff3e0; color: #e65100; padding: 4px 10px; border-radius: 20px;">Next Days</span>
+  </h2>
+  <div class="card glass-card" style="padding: 0; overflow: hidden; background: white; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.05);">
+    <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+      <thead style="background: #fdfaf5; color: #e65100; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px;">
+        <tr>
+          <th style="padding: 1rem; text-align: left;">Date</th>
+          <th style="padding: 1rem; text-align: left;">Time</th>
+          <th style="padding: 1rem; text-align: left;">Patient</th>
+          <th style="padding: 1rem; text-align: center;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for appt in upcoming %}
+        <tr style="border-bottom: 1px solid #eee;">
+          <td data-label="Date" style="padding: 1rem; font-weight: 800; color: #e65100;">{{ appt.slot.date }}</td>
+          <td data-label="Time" style="padding: 1rem; font-weight: 600;">{{ appt.slot.time }}</td>
+          <td data-label="Patient" style="padding: 1rem; font-weight: 600;">{{ appt.patient_name }}</td>
+          <td style="padding: 1rem; text-align: center;">
+            <a href="{{ url_for('doctor.patient_report', user_id=appt.user_id, booking_id=appt.id) }}" class="btn btn-outline btn-sm" style="border-radius: 50px; padding: 8px 18px; font-weight: 700;">View Details</a>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="4" style="padding: 3rem; text-align: center; color: #999; font-weight: 600;">No upcoming appointments.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleAvailability() {
+    const toggle = document.getElementById('avail-toggle');
+    const status = document.getElementById('avail-status');
+    const dot = document.querySelector('.switch .dot');
+    
+    fetch('/doctor/toggle-availability', {method: 'POST'})
+        .then(r => r.json())
+        .then(data => {
+            if(data.status === 'success') {
+                const is_avail = data.is_available;
+                status.textContent = is_avail ? '🟢 Available' : '🔴 Unavailable';
+                status.style.color = is_avail ? '#2e7d32' : '#c62828';
+                dot.style.left = is_avail ? '22px' : '2px';
+            }
+        });
+}
+</script>
+{% endblock %}

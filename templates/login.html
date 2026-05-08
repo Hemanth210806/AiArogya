@@ -1,0 +1,543 @@
+{% extends "base.html" %}
+{% block title %}Login — ArogyaAI{% endblock %}
+
+{% block content %}
+<!-- QR Scanner Library -->
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+<style>
+  /* Scanner Styles */
+  #reader {
+    width: 100%;
+    border-radius: 15px;
+    overflow: hidden;
+    border: none !important;
+    background: white;
+  }
+  #reader__dashboard_section_csr button {
+    background: #1565C0 !important;
+    color: white !important;
+    border: none !important;
+    padding: 10px 20px !important;
+    border-radius: 10px !important;
+    font-weight: 600 !important;
+    margin: 5px !important;
+    cursor: pointer;
+  }
+  .scanner-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.8);
+    z-index: 1000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    backdrop-filter: blur(5px);
+  }
+
+  /* Responsive Adjustments */
+  @media (max-width: 600px) {
+    .login-content { width: 95% !important; padding: 0 10px; }
+    .tab-btn { font-size: 0.75rem !important; padding: 12px 5px !important; }
+    .glass-card { padding: 1.2rem !important; border-radius: 20px !important; }
+    h1 { font-size: 2rem !important; }
+    .form-control { height: 45px !important; font-size: 0.9rem !important; }
+    .btn-full { padding: 0.9rem !important; font-size: 0.9rem !important; }
+    .qr-grid { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+    .qr-grid .btn { height: 100px !important; }
+  }
+</style>
+
+<!-- Splash Screen -->
+<div id="splash">
+    <div class="splash-logo">
+        <div class="logo-pod">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="ArogyaAI Logo">
+        </div>
+    </div>
+    <h1 class="splash-title"><span id="typing"></span></h1>
+</div>
+    <h1 class="splash-title"><span id="typing"></span></h1>
+</div>
+
+<div class="login-bg">
+  <div class="login-content fade-in">
+
+    <!-- Logo -->
+    <div style="text-align:center;margin-bottom:1.5rem;">
+      <div class="logo-pod" style="width:120px; height:120px; margin-bottom:0.5rem;">
+        <img src="{{ url_for('static', filename='logo.png') }}" style="width:100px; height:auto; mix-blend-mode: multiply;" alt="ArogyaAI Logo">
+      </div>
+      <h1 style="font-family:'Poppins',sans-serif;color:var(--blue);font-size:2.5rem;font-weight:800;margin-bottom:0.1rem;">ArogyaAI</h1>
+      <p style="color:#757575;font-size:1rem;font-weight:600;">Predict. Protect. Respond.</p>
+    </div>
+
+
+    <div class="card glass-card" style="padding:1.5rem; border-radius: 24px;">
+      
+      <!-- Tab Headers -->
+      <div class="tab-headers" style="display: flex; background: rgba(0,0,0,0.05); padding: 5px; border-radius: 15px; margin-bottom: 1.5rem; gap: 5px;">
+        <button class="tab-btn active" onclick="switchTab('user')" style="flex: 1; padding: 10px; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; transition: 0.3s; background: white; color: #1565C0; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">👤 Patient</button>
+        <button class="tab-btn" onclick="switchTab('doctor')" style="flex: 1; padding: 10px; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; transition: 0.3s; background: transparent; color: #666;">🩺 Doctor</button>
+        <button class="tab-btn" onclick="switchTab('qr')" style="flex: 1; padding: 10px; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; transition: 0.3s; background: transparent; color: #666;">📱 QR ID</button>
+      </div>
+
+      <!-- TAB 1: USER -->
+      <div id="tab-user" class="tab-content">
+        <h2 style="font-size:1.2rem;font-weight:700;margin-bottom:1.2rem;text-align:center;color:var(--blue);">👋 Namaste! Log in to Arogya</h2>
+        <form method="POST" action="/login">
+          <div class="form-group">
+            <label class="form-label">Full Name</label>
+            <input type="text" name="name" class="form-control" placeholder="e.g. Rahul Sharma" style="background:rgba(255,255,255,0.8);border:1px solid rgba(0,0,0,0.1);border-radius:12px;"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">📱 Mobile Number *</label>
+            <input type="tel" name="phone" class="form-control" placeholder="10-digit number" required pattern="[0-9]{10}" maxlength="10" style="background:rgba(255,255,255,0.8);border:1px solid rgba(0,0,0,0.1);border-radius:12px;"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">🆘 Emergency Contact</label>
+            <input type="tel" name="emergency_contact" class="form-control" placeholder="Guardian's mobile number" style="background:rgba(255,255,255,0.8);border:1px solid rgba(0,0,0,0.1);border-radius:12px;"/>
+          </div>
+          <button type="submit" class="btn btn-primary btn-lg btn-full mt-2" style="background:linear-gradient(135deg, var(--green), var(--blue)); border:none; box-shadow:0 10px 20px rgba(121,185,41,0.2); font-size:1rem; text-transform:uppercase; padding:1.1rem; border-radius: 12px;">🛡️ Secure Access</button>
+        </form>
+        <div style="text-align:center;margin:1rem 0;color:#9e9e9e;font-size:0.8rem;font-weight:600;display:flex;align-items:center;gap:0.5rem;">
+          <span style="height:1px;background:#eee;flex:1;"></span> OR <span style="height:1px;background:#eee;flex:1;"></span>
+        </div>
+        <a href="/guest" class="btn btn-outline btn-full" style="border-width:1.5px;font-weight:600;border-color:var(--blue);color:var(--blue);border-radius:12px;padding:0.8rem;">👤 Guest Entry</a>
+      </div>
+
+      <!-- TAB 2: DOCTOR -->
+      <div id="tab-doctor" class="tab-content" style="display: none;">
+        <h2 style="font-size:1.2rem;font-weight:700;margin-bottom:1.2rem;text-align:center;color:#1b5e20;">🩺 Doctor Portal</h2>
+        <form method="POST" action="/doctor/login">
+          <div class="form-group">
+            <label class="form-label">Email Address</label>
+            <input type="email" name="email" class="form-control" placeholder="doctor@arogyaai.in" required style="background:rgba(255,255,255,0.8);border:1px solid rgba(0,0,0,0.1);border-radius:12px;"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password</label>
+            <input type="password" name="password" class="form-control" placeholder="••••••••" required style="background:rgba(255,255,255,0.8);border:1px solid rgba(0,0,0,0.1);border-radius:12px;"/>
+          </div>
+          <button type="submit" class="btn btn-success btn-lg btn-full mt-2" style="background:linear-gradient(135deg, var(--green), #43A047); border:none; box-shadow:0 10px 20px rgba(121,185,41,0.2); font-size:1rem; text-transform:uppercase; padding:1.1rem; border-radius: 12px;">🔓 Login to Portal</button>
+        </form>
+        <div style="text-align:center;margin-top:1.2rem;">
+          <a href="/doctor/register" style="color: var(--green); text-decoration: none; font-size: 0.95rem; font-weight: 800;">🆕 New Doctor Sign In</a>
+        </div>
+      </div>
+
+      <!-- TAB 3: QR CARD DASHBOARD -->
+      <div id="tab-qr" class="tab-content" style="display: none;">
+        
+        <!-- DASHBOARD MENU -->
+        <div id="qr-dashboard" style="display: block;">
+          <h2 style="font-size:1.1rem;font-weight:700;margin-bottom:1.5rem;text-align:center;color:#333;">📱 Arogya ID Dashboard</h2>
+          
+          <div class="qr-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem;">
+            <!-- Option 1: Generate -->
+            <button onclick="showQRAction('generate')" class="qr-option-btn" style="background: linear-gradient(135deg, #FFEBEE, #FFFFFF); border: 2px solid #FFCDD2; border-radius: 20px; padding: 1.2rem; transition: 0.3s; box-shadow: 0 4px 15px rgba(211,47,47,0.05);">
+                <div style="background: #D32F2F; width: 45px; height: 45px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 0.8rem; color: white; font-size: 1.5rem;">🔳</div>
+                <b style="color: #D32F2F; font-size: 0.9rem; display: block;">Generate QR</b>
+            </button>
+            
+            <!-- Option 2: Download -->
+            <button onclick="showQRAction('download')" class="qr-option-btn" style="background: linear-gradient(135deg, #E3F2FD, #FFFFFF); border: 2px solid #BBDEFB; border-radius: 20px; padding: 1.2rem; transition: 0.3s; box-shadow: 0 4px 15px rgba(2,45,91,0.05);">
+                <div style="background: var(--blue); width: 45px; height: 45px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 0.8rem; color: white; font-size: 1.5rem;">📥</div>
+                <b style="color: var(--blue); font-size: 0.9rem; display: block;">Download QR</b>
+            </button>
+            
+            <!-- Option 3: Edit -->
+            <button onclick="showQRAction('edit')" class="qr-option-btn" style="background: linear-gradient(135deg, #FFF3E0, #FFFFFF); border: 2px solid #FFE0B2; border-radius: 20px; padding: 1.2rem; transition: 0.3s; box-shadow: 0 4px 15px rgba(245,127,23,0.05);">
+                <div style="background: #F57F17; width: 45px; height: 45px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 0.8rem; color: white; font-size: 1.5rem;">✍️</div>
+                <b style="color: #F57F17; font-size: 0.9rem; display: block;">Edit Info</b>
+            </button>
+            
+            <!-- Option 4: Scanner -->
+            <button onclick="openScanner()" class="qr-option-btn" style="background: linear-gradient(135deg, #E8F5E9, #FFFFFF); border: 2px solid #C8E6C9; border-radius: 20px; padding: 1.2rem; transition: 0.3s; box-shadow: 0 4px 15px rgba(121,185,41,0.05);">
+                <div style="background: var(--green); width: 45px; height: 45px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 0.8rem; color: white; font-size: 1.5rem;">🔍</div>
+                <b style="color: var(--green); font-size: 0.9rem; display: block;">Scanner</b>
+            </button>
+          </div>
+
+          <!-- Option 5: SOS -->
+          <a href="tel:108" class="btn" style="background: linear-gradient(135deg, #d32f2f, #b71c1c); color: white; margin-top: 12px; height: 80px; border-radius: 20px; display: flex; align-items: center; justify-content: center; gap: 15px; font-weight: 800; font-size: 1.2rem; text-decoration: none; border: none; box-shadow: 0 5px 15px rgba(211,47,47,0.3);">
+              🚨 🆘 EMERGENCY SOS
+          </a>
+        </div>
+
+        <!-- VIEW: GENERATE -->
+        <div id="view-qr-generate" style="display: none;">
+          <button onclick="showQRAction('dashboard')" style="background: none; border: none; color: var(--blue); font-weight: 700; cursor: pointer; margin-bottom: 1rem;">← Back to Menu</button>
+          <h3 style="font-size: 1rem; margin-bottom: 1rem; color: #d32f2f;">✨ Create Emergency QR</h3>
+          
+          <div style="max-height: 450px; overflow-y: auto; padding: 10px; background: rgba(0,0,0,0.02); border-radius: 15px;" class="custom-scroll">
+            <form id="qr-form-gen">
+                <div class="form-group"><label class="form-label">Phone (Link Key)</label><input type="tel" name="phone" class="form-control" required placeholder="10-digit mobile" style="border-radius:10px; border:1px solid #fbc02d;"></div>
+                <div class="form-group"><label class="form-label">Full Name</label><input type="text" name="full_name" class="form-control" required style="border-radius:10px;"></div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div class="form-group"><label class="form-label">Age</label><input type="number" name="age" class="form-control" style="border-radius:10px;"></div>
+                    <div class="form-group">
+                        <label class="form-label">Blood Group</label>
+                        <select name="blood_group" class="form-control" required style="border-radius:10px;">
+                            <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
+                            <option>O+</option><option>O-</option><option>AB+</option><option>AB-</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group"><label class="form-label">Allergies</label><input type="text" name="allergies" class="form-control" style="border-radius:10px;"></div>
+                <div class="form-group"><label class="form-label">Chronic Conditions</label><input type="text" name="chronic_conditions" class="form-control" style="border-radius:10px;"></div>
+                <div class="form-group"><label class="form-label">Past Surgeries</label><input type="text" name="past_surgeries" class="form-control" style="border-radius:10px;"></div>
+                <div class="form-group"><label class="form-label">Current Medications</label><input type="text" name="current_medications" class="form-control" style="border-radius:10px;"></div>
+                
+                <p style="font-weight: 700; margin: 15px 0 5px;">Contacts</p>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                    <input type="text" name="emergency_contact1_name" placeholder="Contact 1 Name" class="form-control" style="border-radius:10px;">
+                    <input type="tel" name="emergency_contact1_phone" placeholder="Contact 1 Phone" class="form-control" style="border-radius:10px;">
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <input type="text" name="emergency_contact2_name" placeholder="Contact 2 Name" class="form-control" style="border-radius:10px;">
+                    <input type="tel" name="emergency_contact2_phone" placeholder="Contact 2 Phone" class="form-control" style="border-radius:10px;">
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 10px; margin-top: 15px;">
+                    <input type="checkbox" name="organ_donor" id="donor-gen">
+                    <label for="donor-gen">I am an Organ Donor</label>
+                </div>
+                <button type="button" onclick="submitQR('generate')" class="btn btn-danger btn-full" style="border-radius: 12px; font-weight: 700; margin-top: 1.5rem;">✨ Generate My QR Card</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- VIEW: DOWNLOAD / VIEW EXISTING -->
+        <div id="view-qr-download" style="display: none; text-align: center;">
+          <button onclick="showQRAction('dashboard')" style="background: none; border: none; color: var(--blue); font-weight: 700; cursor: pointer; margin-bottom: 1rem; display: block;">← Back</button>
+          <h3 style="margin-bottom: 1.5rem; color: var(--blue);">💾 Download My QR</h3>
+          
+          <div id="download-search">
+            <input type="tel" id="download-phone-input" class="form-control" placeholder="Enter Registered Phone" style="border-radius: 12px; margin-bottom: 10px;">
+            <button onclick="fetchExistingQR()" class="btn btn-primary btn-full" style="border-radius: 12px;">🔍 Find My QR</button>
+          </div>
+
+          <div id="download-result" style="display: none;">
+            <div style="background: white; padding: 15px; border-radius: 20px; display: inline-block; margin-bottom: 1rem; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+                <img id="dl-qr-img" src="" style="width: 200px; height: 200px; border-radius: 10px;">
+            </div>
+            <p id="dl-arogya-id" style="font-weight: 800; color: var(--blue); margin-bottom: 1.5rem;">-</p>
+            <a id="dl-link" href="#" class="btn btn-success btn-full" style="border-radius: 12px; text-decoration: none; padding: 1rem;">📥 Download & Save</a>
+          </div>
+        </div>
+
+        <!-- VIEW: EDIT -->
+        <div id="view-qr-edit" style="display: none;">
+            <button onclick="showQRAction('dashboard')" style="background: none; border: none; color: var(--blue); font-weight: 700; cursor: pointer; margin-bottom: 1rem;">← Back</button>
+            <h3 style="margin-bottom: 1.5rem; color: #f57f17;">📝 Update Information</h3>
+            
+            <div id="edit-search">
+                <input type="tel" id="edit-phone-input" class="form-control" placeholder="Your Registered Phone" style="border-radius: 12px; margin-bottom: 10px;">
+                <button onclick="loadProfileForEdit()" class="btn btn-primary btn-full" style="border-radius: 12px;">✏️ Load Details</button>
+            </div>
+            
+            <div id="edit-form-area" style="display: none;">
+                <div style="max-height: 400px; overflow-y: auto; padding: 10px; background: rgba(0,0,0,0.02); border-radius: 15px;" class="custom-scroll">
+                    <form id="qr-form-edit">
+                        <input type="hidden" name="phone" id="edit-phone-hidden">
+                        <div class="form-group"><label class="form-label">Full Name</label><input type="text" name="full_name" id="edit-name" class="form-control" style="border-radius:10px;"></div>
+                        <div class="form-group"><label class="form-label">Allergies</label><input type="text" name="allergies" id="edit-allergies" class="form-control" style="border-radius:10px;"></div>
+                        <div class="form-group"><label class="form-label">Chronic Conditions</label><input type="text" name="chronic_conditions" id="edit-conditions" class="form-control" style="border-radius:10px;"></div>
+                        <div class="form-group"><label class="form-label">Past Surgeries</label><input type="text" name="past_surgeries" id="edit-surgeries" class="form-control" style="border-radius:10px;"></div>
+                        <div class="form-group"><label class="form-label">Current Medications</label><input type="text" name="current_medications" id="edit-meds" class="form-control" style="border-radius:10px;"></div>
+                        
+                        <p style="font-weight: 700; margin: 15px 0 5px;">Contacts</p>
+                        <input type="text" name="emergency_contact1_phone" id="edit-c1-phone" class="form-control" placeholder="Primary Contact Phone" style="border-radius:10px; margin-bottom: 10px;">
+                        
+                        <button type="button" onclick="submitQR('edit')" class="btn btn-warning btn-full" style="border-radius: 12px; font-weight: 700; margin-top: 1rem;">Update & Refresh QR</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+      </div>
+
+      <!-- Common Footer (Emergency/SOS) -->
+      <div style="border-top:1px solid rgba(0,0,0,0.05);padding-top:1.2rem;text-align:center;margin-top:1.2rem;display:flex;flex-direction:column;gap:0.8rem;">
+        <p style="font-size:0.8rem;color:#757575;font-weight: 600;">Medical Emergency?</p>
+        <a href="tel:108" class="btn btn-danger btn-full" style="box-shadow:0 8px 15px rgba(198,40,40,0.25);background:linear-gradient(135deg, #C62828, #B71C1C); border-radius: 12px; padding: 0.8rem;">
+          🚨 Call 108 Now
+        </a>
+      </div>
+
+    </div>
+
+    <!-- SCANNER MODAL -->
+    <div id="scanner-overlay" class="scanner-overlay">
+      <div class="glass-card" style="width: 100%; max-width: 450px; padding: 2rem; position: relative;">
+        <button onclick="closeScanner()" style="position: absolute; top: 15px; right: 15px; background: rgba(0,0,0,0.1); border: none; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; font-weight: 800;">✕</button>
+        
+        <h2 style="text-align: center; margin-bottom: 1.5rem; font-size: 1.2rem; color: #333;">🆘 Emergency Scanner</h2>
+        <p style="text-align: center; font-size: 0.85rem; color: #666; margin-bottom: 1.5rem;">Point your camera at an Arogya QR or upload a photo.</p>
+        
+        <div id="reader"></div>
+        
+        <div id="file-input-container" style="margin-top: 1rem; text-align: center;">
+          <p style="margin-bottom: 10px; font-size: 0.8rem; color: #666;">-- OR --</p>
+          <label for="qr-file-upload" class="btn btn-outline" style="display: inline-block; padding: 10px 20px; border-radius: 10px; cursor: pointer; border-color: var(--blue); color: var(--blue); font-weight: 600;">
+            📁 Upload QR Photo
+          </label>
+          <input type="file" id="qr-file-upload" accept="image/*" style="display: none;" onchange="scanUploadedFile(this)">
+        </div>
+        
+        <div style="margin-top: 1.5rem; text-align: center;">
+          <p id="scanner-status" style="font-size: 0.8rem; color: #d32f2f; font-weight: 700;"></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Health Ticker -->
+    <div style="margin-top:1.5rem;background:rgba(0,0,0,0.3);border-radius:25px;padding:0.5rem 1rem;overflow:hidden;white-space:nowrap;backdrop-filter:blur(5px);">
+        <p style="color:#fff;font-size:0.8rem;display:inline-block;animation:ticker 15s linear infinite;">
+            💡 Drink 8 glasses of water daily &bull; 🥦 Eat greens &bull; 🚶 10k steps for a healthy heart &bull; 🧘 Take 5 mins to breathe &bull; 💤 8 hours sleep is vital
+        </p>
+    </div>
+    
+    <style>
+    .custom-scroll::-webkit-scrollbar { width: 5px; }
+    .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 10px; }
+    
+    @keyframes ticker {
+        0% { transform: translateX(100%); }
+        100% { transform: translateX(-100%); }
+    }
+    
+    .tab-btn.active {
+      background: white !important;
+      color: var(--blue) !important;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1) !important;
+    }
+    </style>
+
+    <p style="text-align:center;color:#666;font-size:0.78rem;margin-top:1.5rem;font-weight:600;">
+      ✨ Smart · Compassionate · Reliable ✨
+    </p>
+  </div>
+</div>
+
+<script>
+// Typing Effect
+const text = "ArogyaAI";
+let i = 0;
+function type() {
+    if (i < text.length) {
+        document.getElementById("typing").innerHTML += text.charAt(i);
+        i++;
+        setTimeout(type, 150);
+    }
+}
+
+function switchTab(tab) {
+  // Update buttons
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.classList.remove('active');
+    btn.style.background = 'transparent';
+    btn.style.color = '#666';
+    btn.style.boxShadow = 'none';
+  });
+  
+  const activeBtn = event.target;
+  activeBtn.classList.add('active');
+  activeBtn.style.background = 'white';
+  activeBtn.style.color = (tab === 'user' ? '#022d5b' : (tab === 'doctor' ? '#79B929' : '#d32f2f'));
+  activeBtn.style.boxShadow = '0 4px 10px rgba(0,0,0,0.1)';
+
+  // Update content
+  document.querySelectorAll('.tab-content').forEach(content => content.style.display = 'none');
+  document.getElementById(`tab-${tab}`).style.display = 'block';
+  
+  if (tab === 'qr') showQRAction('dashboard');
+}
+
+function showQRAction(action) {
+    const views = ['dashboard', 'generate', 'download', 'edit'];
+    views.forEach(v => {
+        const el = document.getElementById(`view-qr-${v}`) || document.getElementById(`qr-${v}`);
+        if (el) el.style.display = 'none';
+    });
+    
+    if (action === 'dashboard') {
+        document.getElementById('qr-dashboard').style.display = 'block';
+    } else {
+        document.getElementById('qr-dashboard').style.display = 'none';
+        document.getElementById(`view-qr-${action}`).style.display = 'block';
+    }
+}
+
+async function submitQR(mode) {
+    const formId = mode === 'generate' ? 'qr-form-gen' : 'qr-form-edit';
+    const form = document.getElementById(formId);
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+    
+    // Check if phone exists (for Generate mode)
+    if (mode === 'generate') {
+        const checkRes = await fetch(`/arogya-profile-by-phone/${data.phone}`);
+        const existing = await checkRes.json();
+        if (!existing.error) {
+            return alert("⚠️ This phone number already has a QR Card. Please use 'Download' or 'Edit' instead.");
+        }
+    }
+
+    try {
+        const res = await fetch('/generate-arogya-id', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        const result = await res.json();
+        if (result.success) {
+            alert(mode === 'generate' ? "✅ QR Generated Successfully!" : "✅ Information Updated!");
+            showQRAction('download');
+            document.getElementById('download-phone-input').value = data.phone;
+            fetchExistingQR();
+        }
+    } catch (err) {
+        alert("Error processing request.");
+    }
+}
+
+async function fetchExistingQR() {
+    const phone = document.getElementById('download-phone-input').value;
+    if (!phone) return alert("Enter your phone number");
+    
+    try {
+        const res = await fetch(`/arogya-profile-by-phone/${phone}`);
+        const profile = await res.json();
+        if (profile.error) return alert("❌ No QR Card found for this number.");
+        
+        document.getElementById('download-result').style.display = 'block';
+        document.getElementById('dl-qr-img').src = `/static/qrcodes/${profile.arogya_id}.png`;
+        document.getElementById('dl-arogya-id').innerText = profile.arogya_id;
+        document.getElementById('dl-link').href = `/download-qr/${profile.arogya_id}`;
+    } catch (err) { alert("Search failed."); }
+}
+
+async function loadProfileForEdit() {
+    const phone = document.getElementById('edit-phone-input').value;
+    if (!phone) return alert("Enter your phone number");
+    
+    try {
+        const res = await fetch(`/arogya-profile-by-phone/${phone}`);
+        const profile = await res.json();
+        if (profile.error) return alert("❌ No profile found to edit.");
+        
+        document.getElementById('edit-search').style.display = 'none';
+        document.getElementById('edit-form-area').style.display = 'block';
+        
+        // Populate all fields
+        document.getElementById('edit-phone-hidden').value = profile.phone;
+        document.getElementById('edit-name').value = profile.full_name;
+        document.getElementById('edit-allergies').value = profile.allergies || "";
+        document.getElementById('edit-conditions').value = profile.chronic_conditions || "";
+        document.getElementById('edit-surgeries').value = profile.past_surgeries || "";
+        document.getElementById('edit-meds').value = profile.current_medications || "";
+        document.getElementById('edit-c1-phone').value = profile.emergency_contact1_phone || "";
+        
+    } catch (err) { alert("Load failed."); }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    type();
+    setTimeout(() => {
+        document.getElementById('splash').classList.add('hidden');
+    }, 2500);
+    
+    // Check if coming from doctor login redirect
+    if (window.location.hash === '#doctor') {
+      switchTab('doctor');
+    }
+});
+let html5QrCode = null;
+
+async function getScannerInstance() {
+    if (!html5QrCode) {
+        html5QrCode = new Html5Qrcode("reader");
+    }
+    // If it was busy, stop it
+    if (html5QrCode.isScanning) {
+        await html5QrCode.stop();
+    }
+    return html5QrCode;
+}
+
+async function openScanner() {
+  document.getElementById('scanner-overlay').style.display = 'flex';
+  document.getElementById('scanner-status').innerText = "⌛ Starting camera...";
+  
+  try {
+    const scanner = await getScannerInstance();
+    const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+    
+    await scanner.start(
+        { facingMode: "environment" }, 
+        config, 
+        (decodedText) => handleScannerSuccess(decodedText)
+    );
+    document.getElementById('scanner-status').innerText = "✅ Camera Ready";
+  } catch (err) {
+    console.log("Camera failed, using file mode.");
+    document.getElementById('scanner-status').innerText = "📷 Camera not available. Please upload a photo below.";
+  }
+}
+
+function handleScannerSuccess(decodedText) {
+    console.log(`Match = ${decodedText}`);
+    let finalUrl = decodedText;
+    if (!decodedText.includes('http')) {
+        finalUrl = `/emergency/${decodedText}`;
+    } else {
+        try {
+            const urlObj = new URL(decodedText);
+            finalUrl = urlObj.pathname;
+        } catch(e) { finalUrl = decodedText; }
+    }
+    
+    document.getElementById('scanner-status').innerText = "✅ ID Detected! Redirecting...";
+    setTimeout(() => { window.location.href = finalUrl; }, 1000);
+    closeScanner();
+}
+
+async function scanUploadedFile(input) {
+  if (!input.files || input.files.length === 0) return;
+  
+  const file = input.files[0];
+  const scannerStatus = document.getElementById('scanner-status');
+  scannerStatus.innerText = "⌛ Scanning file...";
+  
+  try {
+    const scanner = await getScannerInstance();
+    const decodedText = await scanner.scanFile(file, true);
+    handleScannerSuccess(decodedText);
+  } catch (err) {
+    console.log("Error scanning file:", err);
+    scannerStatus.innerText = "❌ No QR code found. Try a clearer photo.";
+  }
+}
+
+async function stopScanner() {
+  if (html5QrCode && html5QrCode.isScanning) {
+    try {
+      await html5QrCode.stop();
+      html5QrCode.clear();
+    } catch (err) { console.log("Stop failed", err); }
+  }
+}
+
+function closeScanner() {
+  document.getElementById('scanner-overlay').style.display = 'none';
+  document.getElementById('scanner-status').innerText = "";
+  stopScanner();
+}
+
+// Ensure scanner stops if user clicks back or closes
+window.addEventListener('beforeunload', stopScanner);
+</script>
+{% endblock %}

@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}My Prescriptions — ArogyaAI{% endblock %}
+
+{% block content %}
+<style>
+  @media (max-width: 600px) {
+    .section-title { font-size: 1.5rem !important; }
+    .glass-card { padding: 1.2rem !important; border-radius: 20px !important; }
+    .prescription-header { flex-direction: column; align-items: flex-start !important; gap: 10px; }
+    .medicine-item { flex-direction: column; align-items: flex-start !important; gap: 10px; }
+    .medicine-item a { width: 100%; text-align: center; padding: 0.8rem !important; }
+  }
+</style>
+
+<div class="page fade-in">
+  <div style="margin-bottom: 1.5rem;">
+    <h1 class="section-title" style="font-weight: 900; color: #1a237e;">💊 My Prescriptions</h1>
+    <p class="section-subtitle" style="font-weight: 600; color: #5c6bc0;">Digital Medical Wallet</p>
+  </div>
+
+  {% for p in prescriptions %}
+  <div class="card glass-card" style="margin-bottom: 1.5rem; border-top: 8px solid #2e7d32; padding: 2rem; border-radius: 24px;">
+    <div class="prescription-header" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem;">
+        <div>
+            <h2 style="font-size: 1.2rem; color: #1b5e20; margin-bottom: 0.2rem; font-weight: 900;">Dr. {{ p.doctor.name }}</h2>
+            <p style="font-size: 0.8rem; color: #757575; font-weight: 700;">Issued: {{ p.created_at.strftime('%d %b, %Y') }}</p>
+        </div>
+        <div style="text-align: right;">
+            <span class="badge" style="background: rgba(46, 125, 50, 0.1); color: #2e7d32; font-weight: 800; border: none; padding: 5px 12px; border-radius: 50px; font-size: 0.7rem;">VERIFIED</span>
+        </div>
+    </div>
+
+    <div style="margin-bottom: 1.5rem; background: rgba(0,0,0,0.03); padding: 1.2rem; border-radius: 15px;">
+        <h3 style="font-size: 0.8rem; color: #666; margin-bottom: 0.4rem; text-transform: uppercase; font-weight: 800;">Diagnosis</h3>
+        <p style="font-size: 0.95rem; color: #333; font-weight: 700; margin: 0;">{{ p.diagnosis }}</p>
+    </div>
+
+    <h3 style="font-size: 0.9rem; margin-bottom: 1rem; color: #1a237e; font-weight: 800; text-transform: uppercase;">Medicines</h3>
+    <div style="display: grid; gap: 0.8rem;">
+        {% for med in p.medicines %}
+        <div class="medicine-item" style="display: flex; justify-content: space-between; align-items: center; padding: 1.2rem; border: 1.5px solid #eee; border-radius: 18px; background: white;">
+            <div>
+                <h4 style="font-size: 1.05rem; color: #333; margin: 0; font-weight: 800;">{{ med.medicine_name }}</h4>
+                <p style="font-size: 0.85rem; color: #666; font-weight: 600; margin-top: 2px;">{{ med.dosage }} · {{ med.frequency }} · {{ med.duration }}</p>
+            </div>
+            <a href="{{ med.buy_link }}" target="_blank" class="btn btn-primary btn-sm" style="background: #1565C0; border: none; font-size: 0.8rem; font-weight: 800; border-radius: 10px; padding: 10px 15px;">🛒 Buy Online</a>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if p.instructions %}
+    <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px dashed #ddd;">
+        <p style="font-size: 0.85rem; color: #666;"><strong>Special Instructions:</strong> {{ p.instructions }}</p>
+    </div>
+    {% endif %}
+
+    {% if p.follow_up_date %}
+    <div style="margin-top: 1rem; background: #e3f2fd; padding: 0.8rem; border-radius: 10px; text-align: center;">
+        <p style="font-size: 0.85rem; color: #1565C0; margin: 0; font-weight: 700;">📅 Next Follow-up: {{ p.follow_up_date }}</p>
+    </div>
+    {% endif %}
+  </div>
+  {% else %}
+  <div class="card" style="text-align: center; padding: 3rem; color: #999;">
+    <span style="font-size: 3rem; display: block; margin-bottom: 1rem;">📄</span>
+    <p>You don't have any prescriptions yet.</p>
+    <a href="/appointment" class="btn btn-outline" style="margin-top: 1rem;">Book a Consultation</a>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
