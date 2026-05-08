@@ -101,29 +101,31 @@
 </style>
 
 <nav class="navbar">
-  <a href="/dashboard" class="navbar-brand">
-    <img src="{{ url_for('static', filename='logo.png') }}" class="logo-img" alt="ArogyaAI Logo">
-    <span>ArogyaAI</span>
-  </a>
-  <div class="navbar-links-container">
-    {% if session.get('user_id') or session.get('doctor_id') %}
-        <!-- Notification Bell -->
-        <div style="position: relative; margin-right: 5px;">
-            <button onclick="toggleNotifs()" class="nav-chip" style="background: transparent; border: none; font-size: 1.2rem; cursor: pointer; padding: 0.5rem;">
-                🔔
-                <span id="notif-badge" style="position: absolute; top: 0; right: 0; background: #d32f2f; color: white; border-radius: 50%; font-size: 0.65rem; padding: 2px 6px; font-weight: 800; {% if unread_notifs == 0 %} display: none; {% endif %}">
-                    {{ unread_notifs }}
-                </span>
-            </button>
-        </div>
-        
-        <a href='/logout' class='nav-chip'>🚪 Logout</a>
-        {% if session.get('user_id') %}
-          <button onclick='triggerSOS(event)' class='btn btn-sos-nav'>🚨 SOS</button>
-        {% endif %}
-    {% else %}
-        <a href="/doctor/login" class="nav-chip">👨‍⚕️ Login</a>
-    {% endif %}
+  <div class="nav-container">
+    <a href="/dashboard" class="navbar-brand">
+      <img src="{{ url_for('static', filename='logo.png') }}" class="logo-img" alt="ArogyaAI Logo">
+      <span>ArogyaAI</span>
+    </a>
+    <div class="navbar-links-container">
+      {% if session.get('user_id') or session.get('doctor_id') %}
+          <!-- Notification Bell -->
+          <div style="position: relative; margin-right: 5px;">
+              <button onclick="toggleNotifs()" class="nav-chip" style="background: transparent; border: none; font-size: 1.2rem; cursor: pointer; padding: 0.5rem;">
+                  🔔
+                  <span id="notif-badge" style="position: absolute; top: 0; right: 0; background: #d32f2f; color: white; border-radius: 50%; font-size: 0.65rem; padding: 2px 6px; font-weight: 800; {% if unread_notifs == 0 %} display: none; {% endif %}">
+                      {{ unread_notifs }}
+                  </span>
+              </button>
+          </div>
+          
+          <a href='/logout' class='nav-chip'>🚪 Logout</a>
+          {% if session.get('user_id') %}
+            <button onclick='triggerSOS(event)' class='btn btn-sos-nav'>🚨 SOS</button>
+          {% endif %}
+      {% else %}
+          <a href="/doctor/login" class="nav-chip">👨‍⚕️ Login</a>
+      {% endif %}
+    </div>
   </div>
 </nav>
 
