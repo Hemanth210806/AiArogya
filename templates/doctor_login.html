@@ -19,6 +19,7 @@
     </div>
 
     <form method="POST">
+      <input type="hidden" name="next" value="{{ next }}">
       <div class="form-group" style="margin-bottom: 1.2rem;">
         <label style="display: block; margin-bottom: 0.5rem; font-weight: 800; color: #2e7d32; font-size: 0.8rem; text-transform: uppercase;">Email Address</label>
         <input type="email" name="email" class="form-control" placeholder="doctor@arogyaai.in" required style="width: 100%; padding: 0.9rem; border-radius: 12px; border: 1.5px solid #eee; font-size: 0.95rem;">

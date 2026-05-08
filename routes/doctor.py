@@ -12,6 +12,7 @@ doctor_bp = Blueprint("doctor", __name__, url_prefix="/doctor")
 
 @doctor_bp.route("/login", methods=["GET", "POST"])
 def login():
+    next_url = request.args.get("next") or url_for("doctor.dashboard")
     if request.method == "POST":
         email = request.form.get("email")
         password = request.form.get("password")
@@ -20,9 +21,11 @@ def login():
             session["doctor_id"] = doctor.id
             session["doctor_name"] = doctor.name
             session["is_doctor"] = True
-            return redirect(url_for("doctor.dashboard"))
+            # Support next parameter for redirection back to emergency profiles
+            target = request.form.get("next") or next_url
+            return redirect(target)
         flash("Invalid email or password", "error")
-    return render_template("doctor_login.html")
+    return render_template("doctor_login.html", next=next_url)
 
 @doctor_bp.route("/register", methods=["GET", "POST"])
 def register():

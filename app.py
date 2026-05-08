@@ -361,6 +361,15 @@ def get_arogya_by_phone(phone):
 
 @app.route('/emergency/<arogya_id>')
 def emergency_page(arogya_id):
+    # If this is a fresh scan/visit (no ?verified=1 in URL):
+    if not flask_request.args.get('verified'):
+        # 1. Clear the specific patient verification
+        # 2. Clear the doctor's login session to force a fresh login for this NEW scan
+        session.pop(f'verified_{arogya_id}', None)
+        session.pop('is_doctor', None)
+        session.pop('doctor_id', None)
+        session.pop('doctor_name', None)
+    
     result = db.session.execute(
         text("SELECT * FROM arogya_profiles WHERE arogya_id=:aid"),
         {"aid": arogya_id}
@@ -407,6 +416,22 @@ def send_emergency_otp():
     wa_link = f"https://wa.me/{clean_contact}?text={flask_request.utils.quote(msg) if hasattr(flask_request, 'utils') else msg.replace(' ', '%20')}"
     
     return jsonify({"success": True, "wa_link": wa_link})
+
+@app.route('/doctor/ajax-login', methods=['POST'])
+def doctor_ajax_login():
+    from werkzeug.security import check_password_hash
+    data = flask_request.get_json()
+    email = data.get('email')
+    password = data.get('password')
+    
+    doctor = Doctor.query.filter_by(email=email).first()
+    if doctor and check_password_hash(doctor.password_hash, password):
+        session["doctor_id"] = doctor.id
+        session["doctor_name"] = doctor.name
+        session["is_doctor"] = True
+        return jsonify({"success": True})
+    
+    return jsonify({"success": False, "message": "Invalid email or password"})
 
 @app.route('/verify-doctor-otp', methods=['POST'])
 def verify_doctor_otp():

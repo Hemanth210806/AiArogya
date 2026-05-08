@@ -37,7 +37,7 @@
                 <span style="font-size: 1.8rem;">🙋</span> Bystander / Helper
             </button>
             
-            <button onclick="showDoctor()" class="role-btn" style="background: linear-gradient(135deg, #1e88e5, #1565c0); color: white; border: none; padding: 1.5rem; border-radius: 20px; font-weight: 800; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 12px; box-shadow: 0 8px 20px rgba(21, 101, 192, 0.3); border: 2px solid rgba(255,255,255,0.2);">
+            <button onclick="handleDoctorClick()" class="role-btn" style="background: linear-gradient(135deg, #1e88e5, #1565c0); color: white; border: none; padding: 1.5rem; border-radius: 20px; font-weight: 800; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 12px; box-shadow: 0 8px 20px rgba(21, 101, 192, 0.3); border: 2px solid rgba(255,255,255,0.2);">
                 <span style="font-size: 1.8rem;">🩺</span> Doctor / Paramedic
             </button>
         </div>
@@ -47,6 +47,22 @@
                 🚑 Call 108 Ambulance
             </a>
         </div>
+    </div>
+
+    <!-- 1.5 DOCTOR LOGIN VIEW (Integrated) -->
+    <div id="view-doctor-login" class="card glass-card" style="padding: 2rem; display: none; border-radius: 30px; border-top: 6px solid #1565C0;">
+        <h2 style="text-align: center; font-size: 1.3rem; color: #1565C0; margin-bottom: 1.5rem;">🩺 Doctor Login</h2>
+        <div class="form-group">
+            <label class="form-label">Email</label>
+            <input type="email" id="ajax-email" class="form-control" placeholder="doctor@arogyaai.in">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Password</label>
+            <input type="password" id="ajax-password" class="form-control" placeholder="••••••••">
+        </div>
+        <p id="ajax-login-error" style="color: #d32f2f; font-size: 0.8rem; display: none; margin-bottom: 1rem; font-weight: 700;"></p>
+        <button onclick="submitAjaxLogin()" class="btn btn-primary btn-full" style="border-radius: 12px; font-weight: 700; padding: 1rem;">🔓 Secure Login</button>
+        <button onclick="location.reload()" style="background: none; border: none; color: #888; width: 100%; margin-top: 1rem; cursor: pointer; font-size: 0.9rem;">← Cancel</button>
     </div>
 
     <!-- 2. HELPER VIEW -->
@@ -84,6 +100,11 @@
 
         <div id="alert-action" style="display: none;">
             <p style="color: #2e7d32; font-weight: 700; margin-bottom: 1.5rem;">✅ Location Locked!</p>
+            
+            <a href="tel:{{ profile.emergency_contact1_phone }}" style="background: #1565C0; color: white; text-decoration: none; padding: 1rem; border-radius: 15px; margin-bottom: 1rem; display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 800; box-shadow: 0 4px 12px rgba(21,101,192,0.2);">
+                📞 Call Emergency Contact
+            </a>
+
             <button id="wa-alert-btn" onclick="triggerDoctorReveal()" style="background: #25D366; color: white; border: none; padding: 1.5rem; border-radius: 20px; font-weight: 700; font-size: 1.1rem; cursor: pointer; width: 100%; box-shadow: 0 10px 20px rgba(37,211,102,0.3);">
                 📲 Send Family Alert & Unlock
             </button>
@@ -91,11 +112,16 @@
         </div>
     </div>
 
-    <!-- 4. DOCTOR FULL VIEW (Rendered by Jinja if verified) -->
+    <!-- 4. DOCTOR FULL VIEW -->
     {% if session.get('verified_' + profile.arogya_id) %}
     <div id="view-doctor-full" class="card glass-card" style="padding: 2rem; border-radius: 30px; display: block; border-top: 6px solid #1565C0; margin-top: 1rem;">
-        <div style="background: #e3f2fd; color: #1565C0; padding: 6px 15px; border-radius: 50px; font-size: 0.75rem; font-weight: 800; display: inline-block; margin-bottom: 1.5rem;">
-            🛡️ SECURE MEDICAL ACCESS
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <div style="background: #e3f2fd; color: #1565C0; padding: 6px 15px; border-radius: 50px; font-size: 0.75rem; font-weight: 800; display: inline-block;">
+                🛡️ SECURE MEDICAL ACCESS
+            </div>
+            <button onclick="location.reload()" style="background: #f44336; color: white; border: none; padding: 5px 12px; border-radius: 10px; font-size: 0.75rem; font-weight: 700; cursor: pointer;">
+                🔒 Lock Profile
+            </button>
         </div>
         
         <h2 style="font-size: 1.5rem; margin-bottom: 1.2rem; color: #333;">{{ profile.full_name }}</h2>
@@ -157,50 +183,83 @@ const firstName = "{{ profile.full_name.split(' ')[0] }}";
 
 // Logic to show/hide views
 window.onload = function() {
+    // If we just verified, strip the parameter from URL to prevent persistence on refresh
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('verified')) {
+        const cleanUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, cleanUrl);
+    }
+
     {% if session.get('verified_' + profile.arogya_id) %}
-    // If already a verified doctor, hide the choice and show the profile
-    document.getElementById('role-chooser').style.display = 'none';
+        // If doctor just clicked 'Unlock' (session is verified), hide chooser and show full view
+        document.getElementById('role-chooser').style.display = 'none';
+        if(document.getElementById('view-doctor-full')) document.getElementById('view-doctor-full').style.display = 'block';
     {% else %}
-    // New visitor: show the choice
-    document.getElementById('role-chooser').style.display = 'block';
+        // New visit or Refresh: show the role choice
+        document.getElementById('role-chooser').style.display = 'block';
     {% endif %}
     
     // FORCIBLY REQUEST LOCATION ON LOAD FOR EMERGENCY
     if (navigator.geolocation) {
-        const gpsOptions = { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 };
-        
         navigator.geolocation.getCurrentPosition((pos) => {
             window.cachedLat = pos.coords.latitude;
             window.cachedLng = pos.coords.longitude;
-            console.log("Emergency Location Cached.");
         }, (err) => {
             console.warn("GPS Error:", err.message);
-            if(window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
-                console.warn("Mobile browsers block GPS on HTTP. Use HTTPS for full SOS features.");
-            }
-        }, gpsOptions);
+        });
     }
 };
 
 function showHelper() {
     document.getElementById('role-chooser').style.display = 'none';
     document.getElementById('view-helper').style.display = 'block';
+}
+
+function handleDoctorClick() {
+    {% if session.get('is_doctor') %}
+        // Already logged in! Go straight to alerting
+        showDoctor();
+    {% else %}
+        // Not logged in! Show integrated login form
+        document.getElementById('role-chooser').style.display = 'none';
+        document.getElementById('view-doctor-login').style.display = 'block';
+    {% endif %}
+}
+
+async function submitAjaxLogin() {
+    const email = document.getElementById('ajax-email').value;
+    const password = document.getElementById('ajax-password').value;
+    const errEl = document.getElementById('ajax-login-error');
     
-    // Remind them if location was denied
-    if(!window.cachedLat) {
-        if(window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
-            alert("🔒 Mobile Security: Your mobile browser is blocking GPS because this connection is not HTTPS. \n\nTip: For the hackathon, please use a laptop or ensure HTTPS is enabled for real-time location tracking.");
+    if(!email || !password) {
+        errEl.innerText = "Email and Password are required.";
+        errEl.style.display = "block";
+        return;
+    }
+    
+    try {
+        const res = await fetch('/doctor/ajax-login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+        const result = await res.json();
+        
+        if(result.success) {
+            // Login successful! Hide login and show alerting
+            document.getElementById('view-doctor-login').style.display = 'none';
+            showDoctor();
         } else {
-            alert("📍 Tip: Please click 'Allow' for location access so you can share the GPS spot with the family.");
+            errEl.innerText = result.message || "Invalid credentials.";
+            errEl.style.display = "block";
         }
+    } catch(e) {
+        errEl.innerText = "Connection error. Try again.";
+        errEl.style.display = "block";
     }
 }
 
 function showDoctor() {
-    {% if session.get('verified_' + profile.arogya_id) %}
-    document.getElementById('role-chooser').style.display = 'none';
-    // If already verified, Jinja shows view-doctor-full
-    {% else %}
     document.getElementById('role-chooser').style.display = 'none';
     document.getElementById('view-doctor-alerting').style.display = 'block';
     
@@ -209,37 +268,35 @@ function showDoctor() {
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
         const mapsUrl = `https://maps.google.com/?q=${lat},${lng}`;
-        const msg = `EMERGENCY: ${firstName} is in a medical crisis. A Doctor is accessing their profile.\n\n📍 Location: ${mapsUrl}`;
+        // Note: Using a generic 'Doctor' label if session.doctor_name is not yet synced in this specific request
+        const doctorName = "{{ session.get('doctor_name', 'Doctor') }}";
+        const msg = `EMERGENCY: ${firstName} is in a medical crisis. Dr. ${doctorName} is accessing their profile.\n\n📍 Location: ${mapsUrl}`;
         const waUrl = `https://wa.me/91${contactPhone.replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`;
         
         document.getElementById('alert-loader').style.display = 'none';
         document.getElementById('alert-action').style.display = 'block';
-        
-        // Save URL for the button
         window.doctorAlertUrl = waUrl;
     }, (err) => {
-        // Fallback no GPS
-        const msg = `EMERGENCY: ${firstName} is in a medical crisis. A Doctor is accessing their profile. (Location access denied)`;
+        const doctorName = "{{ session.get('doctor_name', 'Doctor') }}";
+        const msg = `EMERGENCY: ${firstName} is in a medical crisis. Dr. ${doctorName} is accessing their profile. (Location access denied)`;
         const waUrl = `https://wa.me/91${contactPhone.replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`;
         document.getElementById('alert-status').innerText = "⚠️ Location Unavailable";
         document.getElementById('alert-loader').style.display = 'none';
         document.getElementById('alert-action').style.display = 'block';
         window.doctorAlertUrl = waUrl;
     });
-    {% endif %}
 }
 
 function triggerDoctorReveal() {
     window.open(window.doctorAlertUrl, '_blank');
     
-    // Auto-verify in background after alert is opened
     setTimeout(async () => {
         await fetch('/verify-doctor-otp', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ arogya_id: arogyaID, otp: '123456' })
         });
-        location.reload();
+        window.location.href = window.location.pathname + "?verified=1";
     }, 1000);
 }
 
