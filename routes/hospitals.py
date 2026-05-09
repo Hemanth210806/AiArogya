@@ -26,4 +26,6 @@ def hospitals():
         maps_key=maps_key,
         maps_provider=provider,
         demo_maps=demo_maps, 
-        mock_hospitals=mock_hospitals)
+        mock_hospitals=mock_hospitals,
+        user_lat=session.get("user_lat"),
+        user_lng=session.get("user_lng"))

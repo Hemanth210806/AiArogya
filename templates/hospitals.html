@@ -24,11 +24,11 @@
   <!-- Premium Header -->
   <div class="hospital-header" style="background:linear-gradient(135deg,#1E88E5,#1565C0);padding:2rem;border-radius:24px;margin-bottom:2rem;color:white;box-shadow:0 10px 30px rgba(0,0,0,0.1);display:flex;justify-content:space-between;align-items:center;">
     <div>
-        <h1 style="font-family:'Poppins',sans-serif;font-size:1.8rem;font-weight:900;margin:0;">🗺️ Care Centers</h1>
+        <h1 style="font-family:'Poppins',sans-serif;font-size:1.8rem;font-weight:900;margin:0;">🗺️ Nearby Doctors & Hospitals</h1>
         <p style="font-size:0.95rem;font-weight:600;margin-top:0.4rem;opacity:0.9;">Specialized care for <strong>{{ department }}</strong></p>
     </div>
-    <button onclick="getCurrentLocation()" class="btn btn-primary" style="background:#fff;color:#1565C0;border-radius:15px;padding:0.7rem 1.2rem; font-weight: 700;">
-        📍 Current Location
+    <button id="locate-btn" onclick="getCurrentLocation()" class="btn btn-primary" style="background:#fff;color:#1565C0;border-radius:15px;padding:0.7rem 1.2rem; font-weight: 700; display: flex; align-items: center; gap: 5px;">
+        <span id="locate-icon">📍</span> <span id="locate-text">Current Location</span>
     </button>
   </div>
 
@@ -75,8 +75,17 @@ const MYSORE_LAT = 12.2757;
 const MYSORE_LNG = 76.6454;
 
 document.addEventListener('DOMContentLoaded', () => {
-    initMap(MYSORE_LAT, MYSORE_LNG);
-    // Automatic geolocation disabled for stability. User can click "My Location" button.
+    const sLat = "{{ user_lat }}";
+    const sLng = "{{ user_lng }}";
+    
+    if (sLat && sLng && sLat !== 'None' && sLng !== 'None') {
+        console.log("Using session location:", sLat, sLng);
+        initMap(sLat, sLng);
+    } else {
+        initMap(MYSORE_LAT, MYSORE_LNG);
+        // If no session location, try to get it once
+        setTimeout(getCurrentLocation, 1000);
+    }
 });
 
 function initMap(lat, lng) {
@@ -98,13 +107,35 @@ function initMap(lat, lng) {
 }
 
 function getCurrentLocation() {
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(pos => {
-            initMap(pos.coords.latitude, pos.coords.longitude);
-        }, err => {
-            console.warn("Geolocation denied. Using default Mysore center.");
-        });
+    const btnText = document.getElementById('locate-text');
+    const btnIcon = document.getElementById('locate-icon');
+    
+    if (!navigator.geolocation) {
+        alert("Geolocation is not supported by your browser.");
+        return;
     }
+
+    if (btnText) btnText.textContent = "Locating...";
+    
+    navigator.geolocation.getCurrentPosition(pos => {
+        if (btnText) btnText.textContent = "Current Location";
+        initMap(pos.coords.latitude, pos.coords.longitude);
+        
+        // Sync back to server session
+        fetch('/update-location', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude })
+        });
+    }, err => {
+        if (btnText) btnText.textContent = "Location Denied";
+        console.warn("Geolocation error:", err);
+        // Don't alert here to avoid annoying the user if they just declined, 
+        // but if they explicitly clicked the button, we should show something.
+        if (err.code === 1) {
+            alert("Please enable location access in your browser settings to find nearby centers.");
+        }
+    }, { timeout: 10000, enableHighAccuracy: true });
 }
 
 function searchByLocation() {
