@@ -55,9 +55,16 @@ DURATION_DELTA  = {"NEW": 0, "HOURS": +1, "DAYS": +2, "WEEK": +3, "CHRONIC": +4}
 # ─── Heart/critical disease keywords ─────────────────────────────────────────
 CRITICAL_DISEASES = [
     "heart attack", "myocardial infarction", "cardiac arrest",
-    "heart disease", "coronary artery disease",
-    "stroke", "brain stroke",
-    "pulmonary embolism",
+    "stroke", "brain stroke", "paralysis (brain hemorrhage)",
+    "pulmonary embolism", "hypoglycemia"
+]
+
+MILD_DISEASES = [
+    "common cold", "acne", "fungal infection", "allergy", 
+    "cervical spondylosis", "dimorphic hemmorhoids(piles)",
+    "varicose veins", "hypothyroidism", "hyperthyroidism",
+    "psoriasis", "impetigo", "osteoarthritis", "arthritis",
+    "vertigo"
 ]
 
 # ─── Department mapping ───────────────────────────────────────────────────────
@@ -177,12 +184,21 @@ def calculate_severity(
     heart_critical      = is_critical_disease and top_probability >= 0.5
 
     # ── Determine level ───────────────────────────────────────────────────────
-    if heart_critical or avg_score >= 6:
+    # We use higher thresholds to avoid over-alerting for common issues.
+    if heart_critical or avg_score >= 7.0:
         level = "CRITICAL"
-    elif avg_score >= 3.5:
+    elif avg_score >= 5.0:
         level = "MODERATE"
     else:
         level = "MILD"
+
+    # ── Protection Cap: Prevent mild diseases from triggering CRITICAL/MODERATE ──
+    # If the AI predicts a mild disease, we cap it at MILD unless symptoms are extreme.
+    if any(md in top_disease.lower() for md in MILD_DISEASES):
+        if avg_score >= 6.5:
+            level = "MODERATE"
+        else:
+            level = "MILD"
 
     # ── Get precautions from CSV (never hardcoded) ────────────────────────────
     precautions = _precaution_dict.get(top_disease, [])

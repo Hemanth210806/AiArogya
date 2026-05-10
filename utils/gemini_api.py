@@ -18,7 +18,7 @@ genai.configure(api_key=config.GEMINI_API_KEY)
 def get_gemini_response(prompt: str) -> str:
     """Simple wrapper to get a text response from Gemini."""
     try:
-        model = genai.GenerativeModel("gemini-flash-lite-latest")
+        model = genai.GenerativeModel("gemini-flash-latest")
         response = model.generate_content(prompt)
         return response.text.strip()
     except Exception as e:
@@ -140,12 +140,16 @@ def rule_based_extract(text: str, symptom_list: list) -> dict:
         if "side" in t or "arm" in t or "leg" in t:
             found.append("weakness_of_one_body_side")
         
-    # IMPETIGO ANCHORS (Safety from Hepatitis)
-    if "crust" in t or "ooze" in t or "burst" in t or "sore" in t:
+    # IMPETIGO ANCHORS (Safety from Hepatitis/Sore Throat)
+    if ("crust" in t or "ooze" in t or "burst" in t):
         if "nose" in t or "mouth" in t or "face" in t:
             found.append("yellow_crust_ooze")
             found.append("red_sore_around_nose")
             found.append("blister")
+    
+    # Specific check for red_sore_around_nose (must NOT be sore throat)
+    if "sore" in t and "nose" in t and "throat" not in t:
+         found.append("red_sore_around_nose")
 
     # HEART ATTACK SAFETY (Exclude if hunger present)
     # NECK & SHOULDER (Orthopedic Anchors)
@@ -174,11 +178,11 @@ def extract_symptoms_gemini(text: str, symptom_list: list, image_path: str = Non
     try:
         print(f"--- AI DIAGNOSIS START: '{text[:20]}...' ---")
         
-        model_name = "gemini-flash-lite-latest"
+        model_name = "gemini-flash-latest"
         try:
             model = genai.GenerativeModel(model_name)
         except Exception:
-            model = genai.GenerativeModel("gemini-flash-latest")
+            model = genai.GenerativeModel("gemini-pro")
             
         symptom_list_str = ", ".join(symptom_list)
         prompt = f"""You are a Senior Diagnostic Consultant. 
@@ -188,13 +192,14 @@ Available symptoms list: {symptom_list_str}
 
 CRITICAL INSTRUCTIONS:
 1. CATEGORY BOUNDARIES: 
-   - 'Yellow crusts/ooze' or 'Sores' are SKIN symptoms (Impetigo/Fungal). They are NOT Jaundice/Hepatitis.
-   - 'Yellow skin/eyes' are LIVER symptoms (Hepatitis).
+   - 'Yellow crusts/ooze' or 'Sores' on the skin are Impetigo symptoms. They are NOT Jaundice/Hepatitis.
+   - A 'sore throat' is a respiratory symptom (Common Cold/Flu). It is NOT 'red_sore_around_nose'.
 2. PARALYSIS ANCHOR: If the patient mentions 'weakness of one side', 'can't move one side', or 'altered speech', you MUST include 'weakness_of_one_body_side'. This is NOT Hypertension.
 3. DO NOT MISS FEVER: If 'hot' or 'chills' are mentioned, include 'fever'.
 4. MAPPING ACCURACY:
    - 'Yellow crust ooze' -> 'yellow_crust_ooze' (Impetigo)
-   - 'Red sore' -> 'red_sore_around_nose' (Impetigo)
+   - 'Red sore' on skin -> 'red_sore_around_nose' (Impetigo)
+   - 'Sore throat' -> 'throat_irritation'
    - 'Can't move side' -> 'weakness_of_one_body_side' (Paralysis)
 
 Return ONLY a JSON object.
@@ -254,7 +259,7 @@ def refine_predictions_gemini(text: str, predictions: list) -> list:
         return predictions
 
     try:
-        model = genai.GenerativeModel("gemini-flash-lite-latest")
+        model = genai.GenerativeModel("gemini-flash-latest")
         
         candidates = ", ".join([p["disease"] for p in predictions])
         prompt = f"""A patient said: "{text}"
@@ -268,6 +273,10 @@ The ML model sometimes confuses similar diseases. Use these rules:
 3. IMPETIGO vs HEPATITIS: If the 'yellow' symptoms are sores, crusts, or oozing on the skin, it is **Impetigo**. Hepatitis only applies if the skin/eyes themselves are turning yellow.
 4. UTI vs DIABETES: If there is **burning** or **bladder pain**, it is **Urinary Tract Infection (UTI)**. Diabetes only involves high frequency (Polyuria) without burning.
 5. PNEUMONIA vs TUBERCULOSIS (TB): This is CRITICAL. If symptoms are RECENT (days/hours), it is Pneumonia. If symptoms are LONG-TERM (weeks/months) with weight loss or night sweats, it is TB.
+6. COMMON COLD vs INFLUENZA (FLU): If the patient has SEVERE body aches, high fever, and extreme fatigue, it is **Influenza**. If it is mostly sneezing, sore throat, and mild or no fever, it is **Common Cold**.
+7. CHICKEN POX vs DENGUE: Chicken pox has itchy, fluid-filled blisters. Dengue has flat red rashes and intense bone/joint pain.
+8. MALARIA vs TYPHOID: Malaria features intense periodic shivering/chills. Typhoid features abdominal pain and sustained 'step-ladder' fever.
+9. IMPETIGO vs COMMON COLD: If the symptoms involve a **sore throat**, **runny nose**, or **sneezing**, it is the **Common Cold**. **Impetigo** ONLY applies if there are actual physical sores or crusty blisters on the face/nose skin.
 
 Which of the candidates is the single most likely? 
 
@@ -324,57 +333,83 @@ def analyze_image_gemini(image_path: str, text: str = None) -> dict:
         return None
 
     try:
-        model = genai.GenerativeModel("gemini-flash-lite-latest")
+        model = genai.GenerativeModel("gemini-flash-latest")
         
-        prompt = """You are an expert Medical Diagnostic AI specializing in Dermatology (Skin) and Ophthalmology (Eyes).
-A patient has uploaded a photo.
+        prompt = """You are a world-class Medical Diagnostic AI specializing in Dermatology (Skin) and Ophthalmology (Eyes).
+A patient has provided an image for analysis. 
 
 TASK:
-1. Identify the top 5 most likely clinical conditions.
-2. Assign a probability to each (summing to 1.0).
-3. Determine if the case is 'Dermatology' or 'Ophthalmology'.
-4. Provide a reasoning that mentions specific visual features (e.g., 'cloudy lens', 'erythematous borders', 'circular opacity').
+1. Identify the single most likely clinical condition.
+2. Provide the top 5 most likely diseases.
+3. Assign probabilities that sum to 1.0. If you are highly confident, assign >80% to the top result.
+4. Determine the primary medical department ('Dermatology' or 'Ophthalmology').
+5. Provide a brief clinical reasoning highlighting visual features like 'pustules', 'comedones', 'inflammation', etc.
 
-FORMAT:
-Return ONLY a JSON object:
+JSON STRUCTURE:
 {
   "predictions": [
-    {"disease": "Name", "probability": 0.85, "percent": 85},
-    ...
+    {"disease": "Condition Name", "probability": 0.90, "percent": 90},
+    ... (total 5)
   ],
-  "department": "Dermatology" or "Ophthalmology",
-  "reasoning": "..."
+  "department": "Dermatology",
+  "reasoning": "Visible features of inflammatory acne noted..."
 }"""
 
-        inputs = [prompt]
+        inputs = []
         if image_path and os.path.exists(image_path):
-            img = Image.open(image_path)
-            inputs.append(img)
+            try:
+                img = Image.open(image_path)
+                # Ensure image is in a good format for Gemini
+                if img.mode != 'RGB':
+                    img = img.convert('RGB')
+                inputs.append(img)
+            except Exception as e:
+                print(f"Error opening image: {e}")
+                return None
         
+        inputs.append(prompt)
         if text:
-            inputs.append(f"Patient context: {text}")
+            inputs.append(f"Additional Patient Context: {text}")
 
         # Retry logic for transient errors
         for attempt in range(2):
             try:
-                response = model.generate_content(inputs, request_options={"timeout": 45})
-                raw = response.text.strip()
+                print(f"--- IMAGE ANALYSIS ATTEMPT {attempt+1} START ---")
+                response = model.generate_content(inputs, request_options={"timeout": 60})
                 
+                if not response or not response.text:
+                    print(f"Empty response from Gemini on attempt {attempt+1}")
+                    continue
+                    
+                raw = response.text.strip()
+                print(f"Raw AI Response: {raw[:200]}...") # Log start of response
+                
+                # Robust JSON extraction
                 json_match = re.search(r"\{.*\}", raw, re.DOTALL)
                 if json_match:
                     result = json.loads(json_match.group())
                 else:
                     result = json.loads(raw)
 
+                # Ensure predictions exists and is formatted correctly
+                if "predictions" not in result or not result["predictions"]:
+                    print("AI response missing 'predictions' key or empty.")
+                    continue
+
                 # Ensure percent and ai_refined tag
                 for p in result.get("predictions", []):
                     if "percent" not in p:
-                        p["percent"] = int(p.get("probability", 0) * 100)
+                        # Ensure probability is a float and calculate percent
+                        prob = float(p.get("probability", 0))
+                        p["percent"] = int(prob * 100)
                     p["ai_refined"] = True
+                
+                print(f"--- IMAGE ANALYSIS SUCCESS: Found {len(result['predictions'])} predictions ---")
                 return result
             except Exception as inner_e:
+                print(f"Attempt {attempt+1} failed: {inner_e}")
                 if attempt == 1: raise inner_e
-                print(f"Retrying image analysis due to: {inner_e}")
+                print(f"Retrying image analysis...")
         
         return None
 

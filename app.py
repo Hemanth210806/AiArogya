@@ -1,6 +1,7 @@
 import os
 import json
 from flask import Flask, redirect, url_for, render_template, session, jsonify, request as flask_request
+import urllib.parse
 from datetime import datetime
 from flask_socketio import SocketIO, join_room
 from sqlalchemy import text
@@ -158,48 +159,6 @@ def mark_notifs_read():
     db.session.commit()
     return jsonify({"status": "success"})
 
-@app.route("/health-score", methods=["GET", "POST"])
-def health_score():
-    from models import HealthScore
-    import json
-    user_id = session.get("user_id")
-    if not user_id: return redirect(url_for("auth.login"))
-    
-    if request.method == "POST":
-        # Simple score calculation logic
-        smoke = request.form.get("smoke")
-        exercise = request.form.get("exercise")
-        sleep = request.form.get("sleep")
-        water = request.form.get("water")
-        vegetables = request.form.get("vegetables")
-        stress = int(request.form.get("stress", 5))
-        
-        score = 80 # Base
-        if smoke == 'yes': score -= 20
-        if exercise == 'no': score -= 15
-        if sleep == 'no': score -= 10
-        if water == 'no': score -= 5
-        if vegetables == 'no': score -= 5
-        score -= (stress - 5) * 2
-        score = max(0, min(100, score))
-        
-        answers = {
-            "smoke": smoke, "exercise": exercise, "sleep": sleep,
-            "water": water, "vegetables": vegetables, "stress": stress
-        }
-        
-        new_score = HealthScore(user_id=user_id, score=score, answers=json.dumps(answers))
-        db.session.add(new_score)
-        db.session.commit()
-        
-        # Get history for chart
-        history_objs = HealthScore.query.filter_by(user_id=user_id).order_by(HealthScore.created_at.desc()).limit(5).all()
-        history = [{"score": h.score, "date": h.created_at.strftime("%d %b")} for h in reversed(history_objs)]
-        
-        return render_template("health_score.html", result=True, score=score, answers=answers, history=history)
-
-    # If GET, show form
-    return render_template("health_score.html")
 
 @app.route("/prescriptions")
 def my_prescriptions():
@@ -413,7 +372,7 @@ def send_emergency_otp():
     msg = f"ArogyaAI Doctor Access OTP: {otp}. Valid for 5 minutes. Share only with the attending doctor."
     clean_contact = "".join(filter(str.isdigit, phone))
     if len(clean_contact) == 10: clean_contact = "91" + clean_contact
-    wa_link = f"https://wa.me/{clean_contact}?text={flask_request.utils.quote(msg) if hasattr(flask_request, 'utils') else msg.replace(' ', '%20')}"
+    wa_link = f"https://wa.me/{clean_contact}?text={urllib.parse.quote(msg)}"
     
     return jsonify({"success": True, "wa_link": wa_link})
 

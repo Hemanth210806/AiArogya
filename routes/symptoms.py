@@ -47,7 +47,9 @@ def analyze():
 
     if photo_path:
         from utils.gemini_api import analyze_image_gemini
+        print(f"DEBUG: Analyzing photo at {photo_path}")
         image_analysis = analyze_image_gemini(photo_path, text)
+        print(f"DEBUG: Image Analysis Result: {image_analysis}")
         
         if image_analysis and image_analysis.get("predictions"):
             predictions = image_analysis["predictions"]
@@ -58,6 +60,7 @@ def analyze():
         else:
             # If photo was uploaded but analysis failed, don't fall back to ML if text is also empty
             if not text:
+                print("DEBUG: Image analysis failed and no text provided. Flashing error.")
                 flash("AI Image Analysis failed to identify the condition. Please try a clearer photo or describe the symptoms in the text box.", "warning")
                 return redirect(url_for("symptoms.symptom_input"))
     
@@ -72,22 +75,23 @@ def analyze():
             # ─── Ghost AI Predictor ────────────────────────────────
             from utils.gemini_api import get_gemini_response
             ai_prompt = f"""A patient described these symptoms: '{text}'. 
-            Our ML model couldn't find exact matches. Based on your medical knowledge, what are the top 5 most likely diseases?
+            Our primary model couldn't find a confident match. Based on your medical expertise, what are the top 5 most likely diseases?
             
             Return ONLY a JSON list of top 5 objects.
-            Format: [{{ "disease": "Name", "probability": 0.85, "percent": 85 }}, ...]
-            Rules: Probabilities must sum to 1.0. Use diseases from this list if possible: {symptom_list[:10]}..."""
+            Format: [{"disease": "Name", "probability": 0.85, "percent": 85}, ...]
+            Rules: 
+            - Probabilities must sum to 1.0. 
+            - Use common clinical names (e.g., 'Acne', 'Dengue', 'Migraine')."""
             
             try:
-                import google.generativeai as genai
-                model = genai.GenerativeModel("gemini-flash-lite-latest")
                 ai_raw = get_gemini_response(ai_prompt)
                 json_match = re.search(r"\[.*\]", ai_raw, re.DOTALL)
                 ai_predictions = json.loads(json_match.group() if json_match else ai_raw)
                 for p in ai_predictions: p["ai_refined"] = True
                 predictions = ai_predictions
                 extracted_symptoms = ["General Symptoms (AI Analyzed)"]
-            except Exception:
+            except Exception as e:
+                print(f"Ghost AI Error: {e}")
                 flash("We couldn't identify specific symptoms. Please try again.", "warning")
                 return redirect(url_for("symptoms.symptom_input"))
         else:

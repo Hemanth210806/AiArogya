@@ -240,6 +240,25 @@ def predict_top5(extracted_symptoms: list) -> list:
                 r["probability"] = 0.01 # BLOCK
         results.sort(key=lambda x: x["probability"], reverse=True)
 
+    # ─── New: Key Symptom Boost (Pathognomonic Mapping) ────────────────────────
+    # These rules provide a 50% boost if a "tell-tale" symptom is present.
+    KEY_BOOSTS = {
+        "yellow_crust_ooze": "Impetigo",
+        "red_sore_around_nose": "Impetigo",
+        "chest_pain": "Heart attack",
+        "weakness_of_one_body_side": "Paralysis (brain hemorrhage)",
+        "internal_itching": "AIDS",
+        "mucoid_sputum": "Typhoid",
+        "rusty_sputum": "Pneumonia",
+        "continuous_sneezing": "Common Cold"
+    }
+    for sym, dis in KEY_BOOSTS.items():
+        if sym in extracted_symptoms:
+            for r in results:
+                if dis.lower() in r["disease"].lower():
+                    r["probability"] += 0.50
+    results.sort(key=lambda x: x["probability"], reverse=True)
+
     # 8. THE DIARRHOEA RULE (Gastroenteritis vs Ulcer)
     if "diarrhoea" in extracted_symptoms:
         # Peptic ulcer does not cause diarrhoea
@@ -250,16 +269,18 @@ def predict_top5(extracted_symptoms: list) -> list:
                 r["probability"] = 0.01 # BLOCK
         results.sort(key=lambda x: x["probability"], reverse=True)
 
-    # ─── Final Step: Normalization (Ensures total probability = 1.0) ──────────
-    total = sum(p["probability"] for p in results)
-    if total > 0:
-        for p in results:
-            p["probability"] /= total
-            p["percent"] = int(p["probability"] * 100)
-            
-    # Final sort and return top 5
+    # Final sort and take top 5
     results.sort(key=lambda x: x["probability"], reverse=True)
-    return results[:5]
+    top_5 = results[:5]
+
+    # ─── Final Step: Normalization of Top 5 (Ensures display sums to 1.0) ──────
+    top_total = sum(p["probability"] for p in top_5)
+    if top_total > 0:
+        for p in top_5:
+            p["probability"] /= top_total
+            p["percent"] = int(round(p["probability"] * 100))
+            
+    return top_5
 
 
 def get_bar_color(percent: int) -> str:

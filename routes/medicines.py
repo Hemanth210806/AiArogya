@@ -118,12 +118,12 @@ def chatbot_ask():
 
     try:
         genai.configure(api_key=config.GEMINI_API_KEY)
-        # Use gemini-2.0-flash for latest stability
+        # Use gemini-1.5-flash for best stability and speed
         try:
-            model = genai.GenerativeModel("gemini-2.0-flash")
+            model = genai.GenerativeModel("gemini-flash-latest")
             response = model.generate_content(f"Answer this medicine query in simple language for a patient: {question}")
         except Exception as e:
-            print(f"Gemini 2.0 failed, trying flash-latest: {e}")
+            print(f"Gemini 1.5 Flash failed, trying flash-latest: {e}")
             model = genai.GenerativeModel("gemini-flash-latest")
             response = model.generate_content(f"Answer this medicine query in simple language for a patient: {question}")
             

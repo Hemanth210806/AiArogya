@@ -21,7 +21,7 @@ DATABASE_URL = f"sqlite:///{os.path.join(DATABASE_DIR, 'arogya.db')}"
 
 # ─── Google Gemini AI API ─────────────────────────────────────────────────────
 # AI for symptom extraction and health assistant
-GEMINI_API_KEY = "AIzaSyCFwraC--6Tm2ufX10ojWR2sBsQitpmXNY"
+GEMINI_API_KEY = "AIzaSyAYrcaBHT_4lBqLe2Pyo8cSdxSpDxdH4CM"
 USE_GEMINI     = True
 
 # ─── Geoapify (Maps) API ───────────────────────────────────────────────────────
